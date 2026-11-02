@@ -8,18 +8,34 @@ import { API_URL, tokenStore } from './api'
 
 let socket = null
 const listeners = new Set()
+const statusListeners = new Set()
+let connected = false
+const setStatus = (v) => {
+  connected = v
+  statusListeners.forEach((l) => l(v))
+}
 
 export function connectAdminSocket() {
   const token = tokenStore.get()
   if (!token || socket) return
   socket = io(API_URL || window.location.origin, { path: '/socket.io', auth: { token }, transports: ['websocket', 'polling'] })
   socket.on('admin:sync', ({ what = [] } = {}) => listeners.forEach((l) => l(what)))
-  socket.on('connect_error', () => {})
+  socket.on('connect', () => setStatus(true))
+  socket.on('disconnect', () => setStatus(false))
+  socket.on('connect_error', () => setStatus(false))
 }
 
 export function disconnectAdminSocket() {
   socket?.disconnect()
   socket = null
+  setStatus(false)
+}
+
+/** Live-connection state for the top bar; returns an unsubscribe function. */
+export function onLiveStatus(fn) {
+  statusListeners.add(fn)
+  fn(connected)
+  return () => statusListeners.delete(fn)
 }
 
 /** Calls `fn(what)` whenever the server reports changes. Returns an unsubscribe function. */

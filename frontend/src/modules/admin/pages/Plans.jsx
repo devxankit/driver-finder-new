@@ -11,32 +11,35 @@ const EMPTY = { role: 'driver', name: '', months: 1, price: 0, note: '', tag: ''
 
 function PlanCard({ p, onEdit, canEdit }) {
   return (
-    <Card className={`flex flex-col p-5 ${p.active ? '' : 'opacity-60'}`}>
+    <Card className={`relative flex flex-col overflow-hidden p-5 transition hover:shadow-soft ${p.active ? '' : 'opacity-60'} ${p.tag ? 'ring-1 ring-yellow/60' : ''}`}>
+      {p.tag && <span className="absolute inset-x-0 top-0 h-1 bg-yellow" />}
       <div className="flex items-start justify-between gap-2">
         <div>
-          <div className="text-[15px] font-bold">{p.name}</div>
-          <div className="text-xs text-ink-500">{p.note}</div>
+          <div className="text-[15px] font-semibold tracking-tight">{p.name}</div>
+          <div className="mt-0.5 text-[12.5px] text-ink-500">{p.note || '\u00a0'}</div>
         </div>
         <div className="flex gap-1.5">
           {p.tag && <Badge tone="yellow">{p.tag}</Badge>}
           {!p.active && <Badge>Off</Badge>}
         </div>
       </div>
-      <div className="mt-4 text-3xl font-extrabold tracking-tight tabular">{p.price ? rupees(p.price) : <span className="text-lg text-ink-500">Price at launch</span>}</div>
-      <div className="text-xs text-ink-500">
+      <div className="mt-5 text-[32px] leading-none font-bold tracking-tight tabular">{p.price ? rupees(p.price) : <span className="text-lg text-ink-500">Price at launch</span>}</div>
+      <div className="mt-1.5 text-[12.5px] text-ink-500">
         for {p.months} {p.months === 1 ? 'month' : 'months'}
         {p.price > 0 && p.months > 1 && ` · ${rupees(Math.round(p.price / p.months))}/month`}
       </div>
-      <ul className="mt-4 flex-1 space-y-1.5 text-[13px] text-ink-600">
+      <ul className="mt-5 flex-1 space-y-2 border-t border-ink-100 pt-4 text-[13px] text-ink-600">
         {p.benefits.map((b) => (
           <li key={b} className="flex gap-2">
-            <Check className="mt-0.5 size-3.5 shrink-0 text-green" />
+            <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full bg-green-soft">
+              <Check className="size-2.5 text-green-text" strokeWidth={3} />
+            </span>
             {b}
           </li>
         ))}
       </ul>
       {canEdit && (
-        <Button variant="outline" size="sm" icon={Pencil} className="mt-4" onClick={() => onEdit(p)}>
+        <Button variant="outline" size="sm" icon={Pencil} className="mt-5" onClick={() => onEdit(p)}>
           Edit
         </Button>
       )}
@@ -86,18 +89,21 @@ export default function Plans() {
         subtitle="Drivers and owners have separate plans. Browsing is free; a plan unlocks applying, connecting, chat and phone numbers."
         actions={
           isSuper && (
-            <Button icon={Plus} onClick={() => setForm({ ...EMPTY, benefitsText: '' })}>
+            <Button variant="dark" icon={Plus} onClick={() => setForm({ ...EMPTY, benefitsText: '' })}>
               New plan
             </Button>
           )
         }
       />
       <ErrorNote error={error} onRetry={reload} />
-      {!isSuper && <p className="mb-4 text-sm text-ink-500">Only a super admin can change plans and prices.</p>}
+      {!isSuper && <p className="mb-4 rounded-lg border border-ink-200 bg-white px-4 py-2.5 text-[13px] text-ink-500">Only a super admin can change plans and prices.</p>}
 
       {['driver', 'owner'].map((role) => (
         <section key={role} className="mb-8">
-          <h2 className="mb-3 text-sm font-bold tracking-wide text-ink-500 uppercase">{role === 'driver' ? 'Driver plans' : 'Owner plans'}</h2>
+          <div className="mb-3 flex items-baseline gap-2">
+            <h2 className="text-[13px] font-semibold text-ink">{role === 'driver' ? 'Driver plans' : 'Owner plans'}</h2>
+            <span className="text-[12px] text-ink-400 tabular">{plans.filter((p) => p.role === role).length}</span>
+          </div>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {plans
               .filter((p) => p.role === role)

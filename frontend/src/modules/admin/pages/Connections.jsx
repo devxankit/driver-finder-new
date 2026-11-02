@@ -1,19 +1,11 @@
 import { Handshake } from 'lucide-react'
-import { Badge, Card, EmptyState, ErrorNote, Pagination, StatusBadge, Table, Tabs } from '@/components/ui'
+import { Badge, Card, EmptyState, ErrorNote, Identity, Pagination, Segmented, StatusBadge, Table, Toolbar } from '@/components/ui'
 import { useApi } from '@/hooks/useApi'
 import { useUrlState } from '@/hooks/useUrlState'
 import { ago, dateTime, phone } from '@/lib/format'
 import { PageHeader } from '../AdminLayout'
 
-const Person = ({ p }) =>
-  p ? (
-    <div>
-      <div className="font-medium text-ink">{p.company || p.name}</div>
-      <div className="text-xs text-ink-500">{phone(p.phone)}</div>
-    </div>
-  ) : (
-    '-'
-  )
+const Person = ({ p }) => (p ? <Identity size={28} name={p.company || p.name || '—'} sub={phone(p.phone)} /> : <span className="text-ink-400">—</span>)
 
 export default function Connections() {
   const [f, set] = useUrlState({ source: '' })
@@ -21,17 +13,18 @@ export default function Connections() {
   return (
     <div>
       <PageHeader title="Connections" subtitle="Owner and driver pairs who can now call, WhatsApp and chat with each other." />
-      <Tabs
-        className="mb-4 w-fit"
-        value={f.source}
-        onChange={(v) => set({ source: v })}
-        tabs={[
-          { value: '', label: 'All' },
-          { value: 'application', label: 'Driver applied' },
-          { value: 'request', label: 'Owner requested' },
-        ]}
-      />
       <Card>
+        <Toolbar right={<span className="tabular">{data ? `${data.total} connections` : ''}</span>}>
+          <Segmented
+            value={f.source}
+            onChange={(v) => set({ source: v })}
+            options={[
+              { value: '', label: 'All' },
+              { value: 'application', label: 'Driver applied' },
+              { value: 'request', label: 'Owner requested' },
+            ]}
+          />
+        </Toolbar>
         <ErrorNote error={error} onRetry={reload} />
         <Table
           loading={loading}

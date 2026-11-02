@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { Briefcase, EyeOff, RotateCcw } from 'lucide-react'
-import { Badge, Button, Card, ConfirmModal, Drawer, EmptyState, ErrorNote, Field, Input, KeyValue, Pagination, SearchInput, Select, StatusBadge, Table, Tabs, useToast } from '@/components/ui'
+import { Briefcase, EyeOff, RotateCcw, Truck } from 'lucide-react'
+import { Badge, Button, Card, ConfirmModal, Drawer, EmptyState, ErrorNote, Field, FilterSelect, Identity, Input, KeyValue, Pagination, SearchInput, StatusBadge, Table, Tabs, Toolbar, useToast } from '@/components/ui'
 import { useAction, useApi } from '@/hooks/useApi'
 import { useUrlState } from '@/hooks/useUrlState'
 import { api } from '@/lib/api'
@@ -29,8 +29,9 @@ export default function Jobs() {
   return (
     <div>
       <PageHeader title="Job posts" subtitle="Jobs go live as soon as an owner posts them. Hide anything misleading or against the rules." />
-      <div className="mb-4 flex flex-wrap items-center gap-3">
+      <Card>
         <Tabs
+          className="px-3"
           value={f.flagged === 'true' ? 'flagged' : f.status}
           onChange={(v) => (v === 'flagged' ? set({ flagged: 'true', status: '' }) : set({ status: v, flagged: '' }))}
           tabs={[
@@ -42,12 +43,10 @@ export default function Jobs() {
             { value: 'closed', label: 'Closed' },
           ]}
         />
-      </div>
-      <Card>
-        <div className="flex flex-wrap gap-3 border-b border-ink-200 p-4">
-          <SearchInput value={f.q} onChange={(v) => set({ q: v })} placeholder="Title, area, vehicle" />
-          <Select className="w-auto" value={f.category ?? ''} onChange={(e) => set({ category: e.target.value })} placeholder="All vehicles" options={Object.entries(CATEGORY_LABELS).map(([value, label]) => ({ value, label }))} />
-        </div>
+        <Toolbar right={<span className="tabular">{data ? `${data.total} jobs` : ''}</span>}>
+          <SearchInput value={f.q} onChange={(v) => set({ q: v })} placeholder="Title, area or vehicle" />
+          <FilterSelect icon={Truck} value={f.category ?? ''} onChange={(v) => set({ category: v })} placeholder="Vehicle: any" options={Object.entries(CATEGORY_LABELS).map(([value, label]) => ({ value, label }))} />
+        </Toolbar>
         <ErrorNote error={error} onRetry={reload} />
         <Table
           loading={loading}
@@ -61,13 +60,13 @@ export default function Jobs() {
               render: (j) => (
                 <div className="max-w-[340px]">
                   <div className="truncate font-semibold text-ink">{j.title}</div>
-                  <div className="text-xs text-ink-500">
+                  <div className="truncate text-[12px] text-ink-500">
                     {CATEGORY_LABELS[j.category] ?? j.category} · {j.area}
                   </div>
                 </div>
               ),
             },
-            { key: 'owner', title: 'Owner', render: (j) => j.owner?.company || j.owner?.name || '-' },
+            { key: 'owner', title: 'Owner', render: (j) => <Identity size={28} name={j.owner?.company || j.owner?.name || '—'} sub={phone(j.owner?.phone)} /> },
             { key: 'pay', title: 'Pay', render: (j) => <span className="tabular">{rupees(j.pay)}{j.payType === 'trip' ? '/trip' : '/mo'}</span> },
             { key: 'applicants', title: 'Applicants', align: 'right', render: (j) => <span className="tabular">{j.applicants}</span> },
             { key: 'reports', title: 'Reports', align: 'right', render: (j) => (j.reports ? <Badge tone="red">{j.reports}</Badge> : <span className="text-ink-400">0</span>) },
@@ -98,7 +97,7 @@ export default function Jobs() {
         }
       >
         {open && (
-          <Card className="p-4">
+          <Card className="p-5">
             {open.status === 'hidden' && open.hiddenReason && <p className="mb-4 rounded-lg bg-red-soft px-3 py-2 text-sm text-red-text">Hidden: {open.hiddenReason}</p>}
             <KeyValue
               items={[
@@ -133,7 +132,7 @@ export default function Jobs() {
         variant="danger"
         loading={busy}
       >
-        <Field label="Reason (sent to the owner)" className="mt-4">
+        <Field label="Reason (sent to the owner)">
           <Input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Salary looks misleading" />
         </Field>
       </ConfirmModal>

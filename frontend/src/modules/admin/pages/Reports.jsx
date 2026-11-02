@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Check, Flag, Inbox, Phone } from 'lucide-react'
-import { Badge, Button, Card, EmptyState, ErrorNote, Field, Modal, Pagination, StatusBadge, Table, Tabs, Textarea, useToast } from '@/components/ui'
+import { Check, Flag, Inbox, Phone, X } from 'lucide-react'
+import { Badge, Button, Card, EmptyState, ErrorNote, Field, Identity, Modal, Pagination, Segmented, StatusBadge, Table, Tabs, Textarea, Toolbar, useToast } from '@/components/ui'
 import { useAction, useApi } from '@/hooks/useApi'
 import { useUrlState } from '@/hooks/useUrlState'
 import { api } from '@/lib/api'
@@ -27,9 +27,9 @@ function ReportsTable({ f, set }) {
 
   return (
     <>
-      <div className="border-b border-ink-200 p-4">
-        <Tabs value={f.status} onChange={(v) => set({ status: v })} tabs={[{ value: 'open', label: 'Open' }, { value: 'resolved', label: 'Resolved' }, { value: 'dismissed', label: 'Dismissed' }, { value: '', label: 'All' }]} />
-      </div>
+      <Toolbar right={<span className="tabular">{data ? `${data.total} reports` : ''}</span>}>
+        <Segmented value={f.status} onChange={(v) => set({ status: v })} options={[{ value: 'open', label: 'Open' }, { value: 'resolved', label: 'Resolved' }, { value: 'dismissed', label: 'Dismissed' }, { value: '', label: 'All' }]} />
+      </Toolbar>
       <ErrorNote error={error} onRetry={reload} />
       <Table
         loading={loading}
@@ -40,9 +40,9 @@ function ReportsTable({ f, set }) {
         }}
         empty={<EmptyState icon={Flag} title="No reports" text="When someone reports a user or a job in the app, it shows here." />}
         columns={[
-          { key: 'reason', title: 'Reason', render: (r) => <span className="font-semibold text-ink">{r.reason}</span> },
-          { key: 'target', title: 'About', render: (r) => (r.targetType === 'job' ? <span>Job: {r.targetJob?.title}</span> : <span>{r.targetUser?.company || r.targetUser?.name}</span>) },
-          { key: 'reporter', title: 'Reported by', render: (r) => r.reporter?.company || r.reporter?.name || '-' },
+          { key: 'reason', title: 'Reason', render: (r) => <Badge tone={r.status === 'open' ? 'red' : 'neutral'} dot>{r.reason}</Badge> },
+          { key: 'target', title: 'About', render: (r) => (r.targetType === 'job' ? <Identity size={28} square name={r.targetJob?.title || 'Job'} sub={`Job by ${r.targetUser?.company || r.targetUser?.name || '—'}`} /> : <Identity size={28} name={r.targetUser?.company || r.targetUser?.name || '—'} sub={phone(r.targetUser?.phone)} />) },
+          { key: 'reporter', title: 'Reported by', render: (r) => <Identity size={28} name={r.reporter?.company || r.reporter?.name || '—'} sub={phone(r.reporter?.phone)} /> },
           { key: 'createdAt', title: 'When', render: (r) => <span className="text-ink-500">{ago(r.createdAt)}</span> },
           { key: 'status', title: 'Status', render: (r) => <StatusBadge status={r.status} /> },
         ]}
@@ -53,12 +53,13 @@ function ReportsTable({ f, set }) {
         open={Boolean(open)}
         onClose={() => setOpen(null)}
         title="Report"
+        description={open ? `Raised ${dateTime(open.createdAt)}` : undefined}
         footer={
           <>
-            <Button variant="outline" onClick={() => resolve('dismissed')} loading={busy}>
+            <Button variant="outline" icon={X} onClick={() => resolve('dismissed')} loading={busy}>
               Dismiss
             </Button>
-            <Button icon={Check} onClick={() => resolve('resolved')} loading={busy}>
+            <Button variant="dark" icon={Check} onClick={() => resolve('resolved')} loading={busy}>
               Mark resolved
             </Button>
           </>
@@ -68,17 +69,16 @@ function ReportsTable({ f, set }) {
           <div className="space-y-4 text-sm">
             <div>
               <Badge tone="red">{open.reason}</Badge>
-              {open.details && <p className="mt-2 text-ink-700">{open.details}</p>}
-              <p className="mt-2 text-xs text-ink-500">{dateTime(open.createdAt)}</p>
+              {open.details && <p className="mt-3 rounded-lg bg-ink-50 px-3 py-2.5 leading-relaxed text-ink-700">“{open.details}”</p>}
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
-              <button onClick={() => userLink(open.targetUser)} className="rounded-xl border border-ink-200 p-3 text-left hover:border-ink">
+              <button onClick={() => userLink(open.targetUser)} className="rounded-xl border border-ink-200 p-3 text-left transition hover:border-ink-400 hover:shadow-soft">
                 <div className="text-xs text-ink-500">Reported {open.targetType === 'job' ? 'job owner' : 'user'}</div>
                 <div className="font-semibold">{open.targetUser?.company || open.targetUser?.name}</div>
                 <div className="text-xs text-ink-500">{phone(open.targetUser?.phone)}</div>
                 {open.targetJob && <div className="mt-1 text-xs">Job: {open.targetJob.title}</div>}
               </button>
-              <button onClick={() => userLink(open.reporter)} className="rounded-xl border border-ink-200 p-3 text-left hover:border-ink">
+              <button onClick={() => userLink(open.reporter)} className="rounded-xl border border-ink-200 p-3 text-left transition hover:border-ink-400 hover:shadow-soft">
                 <div className="text-xs text-ink-500">Reported by</div>
                 <div className="font-semibold">{open.reporter?.company || open.reporter?.name}</div>
                 <div className="text-xs text-ink-500">{phone(open.reporter?.phone)}</div>
@@ -105,18 +105,17 @@ function EnquiriesTable({ f, set }) {
   }
   return (
     <>
-      <div className="border-b border-ink-200 p-4">
-        <Tabs value={f.estatus ?? ''} onChange={(v) => set({ estatus: v })} tabs={[{ value: '', label: 'All' }, { value: 'new', label: 'New' }, { value: 'done', label: 'Done' }]} />
-      </div>
+      <Toolbar right={<span className="tabular">{data ? `${data.total} enquiries` : ''}</span>}>
+        <Segmented value={f.estatus ?? ''} onChange={(v) => set({ estatus: v })} options={[{ value: '', label: 'All' }, { value: 'new', label: 'New' }, { value: 'done', label: 'Done' }]} />
+      </Toolbar>
       <ErrorNote error={error} onRetry={reload} />
       <Table
         loading={loading}
         rows={data?.items}
         empty={<EmptyState icon={Inbox} title="No enquiries" text="Messages from the website contact form show here." />}
         columns={[
-          { key: 'name', title: 'Name', render: (e) => <span className="font-semibold text-ink">{e.name}</span> },
-          { key: 'phone', title: 'Phone', render: (e) => <a href={`tel:${e.phone}`} className="inline-flex items-center gap-1 hover:underline"><Phone className="size-3" />{e.phone}</a> },
-          { key: 'role', title: 'I am', render: (e) => e.role || '-' },
+          { key: 'name', title: 'Name', render: (e) => <Identity size={28} name={e.name} sub={e.role || undefined} /> },
+          { key: 'phone', title: 'Phone', render: (e) => <a href={`tel:${e.phone}`} className="inline-flex items-center gap-1.5 font-medium whitespace-nowrap text-ink hover:underline"><Phone className="size-3 text-ink-400" />{e.phone}</a> },
           { key: 'message', title: 'Message', render: (e) => <span className="line-clamp-2 max-w-[360px]">{e.message || '-'}</span> },
           { key: 'createdAt', title: 'When', render: (e) => <span className="text-ink-500">{ago(e.createdAt)}</span> },
           {
@@ -144,8 +143,10 @@ export default function Reports() {
   return (
     <div>
       <PageHeader title="Reports & enquiries" subtitle="Disputes raised in the app, and messages from the website." />
-      <Tabs className="mb-4 w-fit" value={f.tab} onChange={(v) => set({ tab: v })} tabs={[{ value: 'reports', label: 'App reports' }, { value: 'enquiries', label: 'Website enquiries' }]} />
-      <Card>{f.tab === 'enquiries' ? <EnquiriesTable f={f} set={set} /> : <ReportsTable f={f} set={set} />}</Card>
+      <Card>
+        <Tabs className="px-3" value={f.tab} onChange={(v) => set({ tab: v })} tabs={[{ value: 'reports', label: 'App reports' }, { value: 'enquiries', label: 'Website enquiries' }]} />
+        {f.tab === 'enquiries' ? <EnquiriesTable f={f} set={set} /> : <ReportsTable f={f} set={set} />}
+      </Card>
     </div>
   )
 }

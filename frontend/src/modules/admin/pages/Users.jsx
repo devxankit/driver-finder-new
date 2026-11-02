@@ -1,6 +1,6 @@
 import { useSearchParams } from 'react-router-dom'
-import { Users as UsersIcon } from 'lucide-react'
-import { Avatar, Card, EmptyState, ErrorNote, Pagination, SearchInput, Select, StatusBadge, Table } from '@/components/ui'
+import { BadgeCheck, CircleDot, Truck, Users as UsersIcon } from 'lucide-react'
+import { Badge, Button, Card, EmptyState, ErrorNote, FilterSelect, Identity, Pagination, SearchInput, StatusBadge, Table, Toolbar } from '@/components/ui'
 import { useApi } from '@/hooks/useApi'
 import { fileUrl } from '@/lib/api'
 import { ago, CATEGORY_LABELS, date, phone } from '@/lib/format'
@@ -13,6 +13,7 @@ export default function Users({ role }) {
   const q = params.get('q') || ''
   const kyc = params.get('kyc') || ''
   const status = params.get('status') || ''
+  const category = params.get('category') || ''
   const page = Number(params.get('page') || 1)
   const openId = params.get('user')
   const set = (patch) => {
@@ -21,8 +22,9 @@ export default function Users({ role }) {
     setParams(next)
   }
 
-  const { data, error, loading, reload } = useApi('/admin/users', { role, q, kyc, status, page }, { live: ['users', 'kyc'] })
   const isOwner = role === 'owner'
+  const { data, error, loading, reload } = useApi('/admin/users', { role, q, kyc, status, category: isOwner ? undefined : category, page }, { live: ['users', 'kyc'] })
+  const filtered = q || kyc || status || category
 
   return (
     <div>
@@ -32,68 +34,76 @@ export default function Users({ role }) {
       />
 
       <Card>
-        <div className="flex flex-wrap items-center gap-3 border-b border-ink-200 p-4">
-          <SearchInput value={q} onChange={(v) => set({ q: v, page: '' })} placeholder={isOwner ? 'Name, business, phone, city' : 'Name, phone, city'} />
-          <Select
-            className="w-auto"
+        <Toolbar
+          right={
+            <>
+              {filtered && (
+                <Button variant="ghost" size="xs" onClick={() => set({ q: '', kyc: '', status: '', category: '', page: '' })}>
+                  Clear filters
+                </Button>
+              )}
+              <span className="tabular">{data ? `${data.total} ${isOwner ? 'owners' : 'drivers'}` : ''}</span>
+            </>
+          }
+        >
+          <SearchInput value={q} onChange={(v) => set({ q: v, page: '' })} placeholder={isOwner ? 'Name, business, phone or city' : 'Name, phone or city'} />
+          <FilterSelect
+            icon={BadgeCheck}
             value={kyc}
-            onChange={(e) => set({ kyc: e.target.value, page: '' })}
-            placeholder="Any KYC status"
+            onChange={(v) => set({ kyc: v, page: '' })}
+            placeholder="KYC: any"
             options={[
               { value: 'approved', label: 'Verified' },
               { value: 'pending', label: 'Waiting for review' },
-              { value: 'rejected', label: 'Rejected' },
+              { value: 'rejected', label: 'Sent back' },
               { value: 'none', label: 'Not submitted' },
             ]}
           />
-          <Select
-            className="w-auto"
+          <FilterSelect
+            icon={CircleDot}
             value={status}
-            onChange={(e) => set({ status: e.target.value, page: '' })}
-            placeholder="Active and suspended"
+            onChange={(v) => set({ status: v, page: '' })}
+            placeholder="Account: any"
             options={[
-              { value: 'active', label: 'Active only' },
-              { value: 'suspended', label: 'Suspended only' },
+              { value: 'active', label: 'Active' },
+              { value: 'suspended', label: 'Suspended' },
             ]}
           />
-          <span className="ml-auto text-sm text-ink-500 tabular">{data ? `${data.total} found` : ''}</span>
-        </div>
+          {!isOwner && (
+            <FilterSelect icon={Truck} value={category} onChange={(v) => set({ category: v, page: '' })} placeholder="Vehicle: any" options={Object.entries(CATEGORY_LABELS).map(([value, label]) => ({ value, label }))} />
+          )}
+        </Toolbar>
         <ErrorNote error={error} onRetry={reload} />
         <Table
           loading={loading}
           rows={data?.items}
           onRowClick={(r) => set({ user: r.id })}
-          empty={<EmptyState icon={UsersIcon} title="No one matches" text="Try clearing the filters." />}
+          selectedKey={openId}
+          empty={<EmptyState icon={UsersIcon} title="No one matches" text={filtered ? 'Try clearing the filters.' : 'People appear here as they sign up in the app.'} />}
           columns={[
-            {
-              key: 'name',
-              title: 'Name',
-              render: (r) => (
-                <div className="flex items-center gap-3">
-                  <Avatar src={fileUrl(r.photo)} name={r.name || r.phone} />
-                  <div className="min-w-0">
-                    <div className="truncate font-semibold text-ink">{r.name || 'No name yet'}</div>
-                    <div className="text-xs text-ink-500">{phone(r.phone)}</div>
-                  </div>
-                </div>
-              ),
-            },
+            { key: 'name', title: 'Name', render: (r) => <Identity src={fileUrl(r.photo)} name={r.name || 'No name yet'} sub={phone(r.phone)} /> },
             isOwner
-              ? { key: 'company', title: 'Business' }
+              ? { key: 'company', title: 'Business', render: (r) => r.company || <span className="text-ink-400">Individual</span> }
               : {
                   key: 'cats',
                   title: 'Drives',
-                  render: (r) => (
-                    <span>
-                      {r.categories.map((c) => CATEGORY_LABELS[c] ?? c).join(', ') || '-'}
-                      {r.experience != null && <span className="text-ink-500"> · {r.experience} yrs</span>}
-                    </span>
-                  ),
+                  render: (r) =>
+                    r.categories.length ? (
+                      <span className="flex flex-wrap items-center gap-1">
+                        {r.categories.slice(0, 2).map((c) => (
+                          <Badge key={c}>{CATEGORY_LABELS[c] ?? c}</Badge>
+                        ))}
+                        {r.categories.length > 2 && <span className="text-[12px] text-ink-500">+{r.categories.length - 2}</span>}
+                        {r.experience != null && <span className="ml-1 text-[12px] text-ink-500">{r.experience} yrs</span>}
+                      </span>
+                    ) : (
+                      <span className="text-ink-400">—</span>
+                    ),
                 },
-            { key: 'city', title: 'City' },
-            { key: 'kyc', title: 'KYC', render: (r) => <StatusBadge status={r.kyc} label={r.kyc === 'approved' ? 'Verified' : undefined} /> },
+            { key: 'city', title: 'City', render: (r) => r.city || <span className="text-ink-400">—</span> },
+            { key: 'kyc', title: 'KYC', render: (r) => <StatusBadge status={r.kyc} /> },
             { key: 'status', title: 'Account', render: (r) => <StatusBadge status={r.status} /> },
-            { key: 'createdAt', title: 'Joined', render: (r) => date(r.createdAt) },
+            { key: 'createdAt', title: 'Joined', render: (r) => <span className="tabular">{date(r.createdAt)}</span> },
             { key: 'seen', title: 'Last seen', render: (r) => <span className="text-ink-500">{ago(r.lastSeenAt)}</span> },
           ]}
         />

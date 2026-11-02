@@ -19,6 +19,7 @@ r.use(protectAdmin)
 r.get('/auth/me', u.me)
 r.post('/auth/password', validate(s.passwordSchema), u.changePassword)
 r.get('/dashboard', u.dashboard)
+r.get('/counts', u.counts)
 
 r.get('/users', u.listUsers)
 r.get('/users/:id', u.userDetail)

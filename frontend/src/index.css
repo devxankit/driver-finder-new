@@ -20,6 +20,8 @@
   --color-yellow-text: #6b4e00;
 
   --color-ink: #111111;
+  --color-ink-950: #0b0b0a;
+  --color-ink-900: #151513;
   --color-ink-800: #1d1d1b;
   --color-ink-700: #2b2b2b;
   --color-ink-600: #4a4a47;
@@ -42,9 +44,13 @@
   --color-blue-text: #09496b;
 
   --font-sans: 'Noto Sans', 'Noto Sans Devanagari', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  /* Admin panel UI face: tighter, more neutral for dense data. */
+  --font-ui: 'Inter', 'Noto Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --color-canvas: #f6f6f3;
 
   --radius-card: 14px;
   --shadow-card: 0 1px 2px rgb(17 17 17 / 0.04), 0 1px 1px rgb(17 17 17 / 0.03);
+  --shadow-soft: 0 1px 2px rgb(17 17 17 / 0.04), 0 4px 16px -6px rgb(17 17 17 / 0.08);
   --shadow-pop: 0 12px 32px -8px rgb(17 17 17 / 0.18), 0 2px 6px rgb(17 17 17 / 0.06);
 }
 
@@ -108,4 +114,54 @@
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* ------------------------------------------------------------ Admin panel */
+.admin-ui {
+  font-family: var(--font-ui);
+  font-feature-settings: 'cv11', 'ss01';
+  letter-spacing: -0.006em;
+}
+.admin-ui .tabular,
+.admin-ui td {
+  font-variant-numeric: tabular-nums;
+}
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-pop-in {
+  animation: pop-in 0.16s ease-out both;
+}
+@keyframes slide-in-right {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+.animate-slide-in {
+  animation: slide-in-right 0.2s ease-out both;
+}
+@keyframes shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--color-ink-100) 25%, #f3f2ee 37%, var(--color-ink-100) 63%);
+  background-size: 800px 100%;
+  animation: shimmer 1.3s ease-in-out infinite;
 }

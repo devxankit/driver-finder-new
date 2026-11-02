@@ -102,6 +102,17 @@ export async function dashboard(req, res) {
     User.find({ ...live, 'kyc.status': 'pending' }).sort({ 'kyc.submittedAt': 1 }).limit(6).lean(),
   ])
 
+  const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+  const weekAgo = new Date(now.getTime() - 7 * DAY_MS)
+  const twoWeeksAgo = new Date(now.getTime() - 14 * DAY_MS)
+  const [revenueLastMonth, jobsPrev7, jobsByCategory, driversByCategory, activity] = await Promise.all([
+    Payment.aggregate([{ $match: { status: 'paid', method: 'razorpay', createdAt: { $gte: lastMonthStart, $lt: monthStart } } }, { $group: { _id: null, sum: { $sum: '$amount' } } }]),
+    Job.countDocuments({ createdAt: { $gte: twoWeeksAgo, $lt: weekAgo } }),
+    Job.aggregate([{ $match: { status: 'active' } }, { $group: { _id: '$category', n: { $sum: 1 } } }, { $sort: { n: -1 } }]),
+    User.aggregate([{ $match: { ...live, role: 'driver', 'kyc.status': 'approved' } }, { $unwind: '$driver.categories' }, { $group: { _id: '$driver.categories', n: { $sum: 1 } } }, { $sort: { n: -1 } }]),
+    recentActivity(),
+  ])
+
   const days = Array.from({ length: 14 }, (_, i) => {
     const d = new Date(since14.getTime() + i * DAY_MS + 5.5 * 3600 * 1000)
     return d.toISOString().slice(0, 10)
@@ -130,7 +141,14 @@ export async function dashboard(req, res) {
       applications,
       openReports,
       newEnquiries,
+      revenueLastMonth: revenueLastMonth[0]?.sum ?? 0,
+      jobsPrev7,
     },
+    breakdown: {
+      jobs: jobsByCategory.map((x) => ({ key: x._id, count: x.n })),
+      drivers: driversByCategory.map((x) => ({ key: x._id, count: x.n })),
+    },
+    activity,
     signups: days.map((d) => ({
       date: d,
       drivers: signups.find((s) => s._id.d === d && s._id.r === 'driver')?.n ?? 0,
@@ -142,6 +160,39 @@ export async function dashboard(req, res) {
     }),
     queue: queue.map(userRow),
   })
+}
+
+/** The latest things that happened on the platform, newest first, for the dashboard feed. */
+async function recentActivity(limit = 14) {
+  const [users, kyc, payments, jobs, conns] = await Promise.all([
+    User.find({ role: { $ne: null }, deletedAt: null }).sort({ createdAt: -1 }).limit(limit).select('name phone role createdAt photo owner').lean(),
+    User.find({ 'kyc.submittedAt': { $ne: null }, deletedAt: null }).sort({ 'kyc.submittedAt': -1 }).limit(limit).select('name phone role kyc photo').lean(),
+    Payment.find({ status: 'paid' }).sort({ createdAt: -1 }).limit(limit).populate('user', 'name phone role').lean(),
+    Job.find().sort({ createdAt: -1 }).limit(limit).populate('owner', 'name owner').select('title owner createdAt category').lean(),
+    Connection.find().sort({ createdAt: -1 }).limit(limit).populate('owner', 'name owner').populate('driver', 'name').lean(),
+  ])
+  const who = (u) => u?.owner?.company || u?.name || u?.phone || 'Someone'
+  const items = [
+    ...users.map((u) => ({ type: 'signup', at: u.createdAt, text: `${u.name || u.phone} joined as ${u.role === 'owner' ? 'a vehicle owner' : 'a driver'}`, userId: String(u._id), role: u.role, photo: publicUrl(u.photo) })),
+    ...kyc.map((u) => ({ type: u.kyc.status === 'approved' ? 'kyc-approved' : u.kyc.status === 'rejected' ? 'kyc-rejected' : 'kyc', at: u.kyc.status === 'pending' ? u.kyc.submittedAt : u.kyc.reviewedAt ?? u.kyc.submittedAt, text: u.kyc.status === 'pending' ? `${u.name || u.phone} sent KYC documents` : `${u.name || u.phone}'s KYC was ${u.kyc.status}`, userId: String(u._id), role: u.role, photo: publicUrl(u.photo) })),
+    ...payments.map((p) => ({ type: 'payment', at: p.createdAt, text: `${p.user?.name || 'A user'} paid ₹${p.amount} · ${p.planName}`, userId: p.user ? String(p.user._id) : null, role: p.user?.role, amount: p.amount })),
+    ...jobs.map((j) => ({ type: 'job', at: j.createdAt, text: `${who(j.owner)} posted “${j.title}”`, jobId: String(j._id) })),
+    ...conns.map((c) => ({ type: 'connection', at: c.createdAt, text: `${who(c.owner)} connected with ${c.driver?.name || 'a driver'}` })),
+  ]
+  return items
+    .filter((x) => x.at)
+    .sort((a, b) => new Date(b.at) - new Date(a.at))
+    .slice(0, limit)
+}
+
+/** GET /api/admin/counts: the small numbers for the sidebar and top bar (cheap, polled often). */
+export async function counts(req, res) {
+  const [kycPending, openReports, newEnquiries] = await Promise.all([
+    User.countDocuments({ deletedAt: null, 'kyc.status': 'pending' }),
+    Report.countDocuments({ status: 'open' }),
+    Enquiry.countDocuments({ status: 'new' }),
+  ])
+  res.json({ success: true, counts: { kycPending, openReports, newEnquiries } })
 }
 
 /* ------------------------------------------------------------------ Users */
@@ -167,13 +218,14 @@ export function userRow(u) {
   }
 }
 
-/** GET /api/admin/users?role=&kyc=&status=&q=&page= */
+/** GET /api/admin/users?role=&kyc=&status=&category=&q=&page= */
 export async function listUsers(req, res) {
-  const { role, kyc, status, q, deleted } = req.query
+  const { role, kyc, status, q, deleted, category } = req.query
   const filter = deleted === 'true' ? { deletedAt: { $ne: null } } : { deletedAt: null }
   if (role) filter.role = role === 'none' ? null : role
   if (kyc) filter['kyc.status'] = kyc
   if (status) filter.status = status
+  if (category) filter['driver.categories'] = category
   if (q) filter.$or = [{ name: like(q) }, { phone: like(q) }, { city: like(q) }, { 'owner.company': like(q) }]
   const { page, limit, skip } = paging(req.query, 20)
   const sort = kyc === 'pending' ? { 'kyc.submittedAt': 1 } : { createdAt: -1 }
