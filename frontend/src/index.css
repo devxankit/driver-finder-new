@@ -1,0 +1,111 @@
+@import 'tailwindcss';
+
+/* ---------------------------------------------------------------------------
+ * Driver Finder design tokens (same as the mobile app, src/theme/index.ts).
+ *
+ *   yellow  signal yellow from the client's logo. Main actions, always with
+ *           black text on it. Never used for body text on white.
+ *   ink     road black + warm greys. Text, sidebar, borders, surfaces.
+ *   green   verified / approved / paid.     red: rejected, errors, reports.
+ *   amber   pending / waiting.
+ *
+ * Tailwind v4 turns each --color-* into utilities (bg-yellow, text-ink-500 ...).
+ * ------------------------------------------------------------------------- */
+@theme {
+  --color-yellow: #febe02;
+  --color-yellow-dark: #e0a600;
+  --color-yellow-50: #fff8e1;
+  --color-yellow-100: #fff1c2;
+  --color-yellow-200: #ffe08a;
+  --color-yellow-text: #6b4e00;
+
+  --color-ink: #111111;
+  --color-ink-800: #1d1d1b;
+  --color-ink-700: #2b2b2b;
+  --color-ink-600: #4a4a47;
+  --color-ink-500: #67665f;
+  --color-ink-400: #a3a29a;
+  --color-ink-300: #dad8d0;
+  --color-ink-200: #e7e5df;
+  --color-ink-100: #efeee9;
+  --color-ink-50: #f6f5f1;
+
+  --color-green: #16803c;
+  --color-green-soft: #e5f5ea;
+  --color-green-text: #11612e;
+  --color-red: #c2323a;
+  --color-red-soft: #fdecec;
+  --color-red-text: #9e1f27;
+  --color-amber-soft: #fff1c2;
+  --color-amber-text: #6b4e00;
+  --color-blue-soft: #e1f1fb;
+  --color-blue-text: #09496b;
+
+  --font-sans: 'Noto Sans', 'Noto Sans Devanagari', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --radius-card: 14px;
+  --shadow-card: 0 1px 2px rgb(17 17 17 / 0.04), 0 1px 1px rgb(17 17 17 / 0.03);
+  --shadow-pop: 0 12px 32px -8px rgb(17 17 17 / 0.18), 0 2px 6px rgb(17 17 17 / 0.06);
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    @apply bg-ink-50 text-ink font-sans;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
+  }
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']) {
+    cursor: pointer;
+  }
+  ::selection {
+    background: var(--color-yellow-200);
+  }
+}
+
+/* Thin, quiet scrollbars (admin tables, drawers). */
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-ink-300) transparent;
+}
+.scroll-thin::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: var(--color-ink-300);
+  border-radius: 8px;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-fade-up {
+  animation: fade-up 0.25s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

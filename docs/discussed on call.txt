@@ -1,0 +1,119 @@
+Client Requirements – Driver & Vehicle Owner Connection Platform
+Based on the client discussion, below are the actual requirements explained during the call, converted into professional English. The requirements are kept aligned with what the client discussed, without adding assumptions or extra features.
+1. Project Overview
+The client wants to develop a platform that connects vehicle owners who need drivers with drivers who are looking for vehicles to drive.
+
+The platform will act as a bridge between vehicle owners and drivers, allowing both parties to find each other based on their requirements.
+
+The platform will support different types of vehicles, such as:
+- Cars
+- Buses
+- Trucks
+- Other commercial and personal vehicles
+2. User Roles
+The platform will have two primary user roles:
+
+A. Vehicle Owner
+- Vehicle owners can register on the platform.
+- They can add their vehicles with complete details.
+- They can specify the type and category of vehicle.
+- They can search for available drivers.
+- They can view driver profiles and connect with suitable drivers.
+B. Driver
+- Drivers can register on the platform.
+- They can create their profiles and submit the required documents.
+- They can search for available vehicles based on their driving preferences and requirements.
+- They can view vehicle details and connect with vehicle owners.
+- They can find employment opportunities through the platform.
+3. Vehicle Listing & Management
+Vehicle owners should be able to add their vehicles to the platform by providing complete vehicle details.
+
+The vehicle listing should include:
+- Vehicle category (Car, Bus, Truck, etc.).
+- Vehicle type (Sedan, Hatchback, etc.).
+- Vehicle model and other relevant details.
+- Other necessary vehicle information.
+The platform should provide category-based filtering so drivers can easily find vehicles matching their requirements.
+
+For example:
+- A driver looking for a sedan should be able to filter and view sedan vehicles.
+- A driver looking for a heavy truck should be able to filter and view heavy truck listings.
+- Similar filters should be available for other vehicle categories.
+4. Driver Registration & KYC Verification
+Driver verification is an important requirement mentioned by the client.
+- Drivers must register and submit their required documents.
+- Drivers should be able to upload documents by capturing photographs directly.
+- Documents may include a driving licence and other necessary identification documents.
+- Submitted documents should be available in the Admin Panel.
+- The admin will manually review and verify the submitted documents.
+- Once the admin approves the driver's profile, the driver will become visible on the platform.
+- Only approved drivers should be available for vehicle owners to view and connect with.
+5. Driver & Vehicle Owner Connection
+The main functionality of the platform is to connect drivers and vehicle owners.
+- Vehicle owners should be able to find drivers according to their vehicle requirements.
+- Drivers should be able to find vehicles according to their preferences.
+- Both parties should be able to view relevant profiles/listings.
+- The platform will facilitate connections between drivers and vehicle owners.
+Important: The platform is not intended to operate as a daily ride-booking or trip-booking application.
+
+It is primarily designed to connect drivers and vehicle owners for employment or long-term/regular driving arrangements.
+6. Subscription-Based Business Model
+The client clearly mentioned that the platform will generate revenue through a subscription model.
+- Both drivers and vehicle owners will have to purchase subscriptions.
+- After purchasing a subscription, users will be able to access the relevant platform listings.
+- Drivers can explore available vehicles and connect with vehicle owners.
+- Vehicle owners can explore available drivers and connect with them.
+- The subscription model will be the primary revenue source for the platform.
+The platform will not charge users for individual daily trips or bookings.
+7. Admin Panel Requirements
+The admin panel should provide control over driver verification.
+- View registered drivers.
+- View uploaded driver documents.
+- Review submitted KYC documents.
+- Approve or reject driver verification.
+- Control driver visibility based on verification status.
+8. User Interface & Usability Requirements
+The client specifically highlighted that many drivers may have limited technical knowledge or may not be highly educated.
+
+Therefore:
+- The driver application/interface must be simple and easy to understand.
+- Navigation should be straightforward.
+- Registration and document submission should be easy.
+- Vehicle categories and filters should be clearly displayed.
+- The overall user experience should require minimal technical knowledge.
+Vehicle owners may have a comparatively more detailed interface because they are expected to be more comfortable using the platform.
+9. Features Not Required / Important Clarifications
+The following points were clarified during the discussion:
+1. The platform is not a traditional taxi-booking application.
+2. There is no requirement for daily trip booking.
+3. The platform will not primarily earn through per-trip commissions.
+4. The main purpose is to connect drivers and vehicle owners.
+5. Both drivers and vehicle owners will use a subscription-based model.
+6. Once connected, both parties can discuss salary, employment terms and other arrangements directly.
+10. Future Scope
+The client mentioned that additional features can be discussed and added later as requirements arise.
+
+No additional features were finalized during this call.
+
+Final Project Understanding
+Platform Type: Driver & Vehicle Owner Connection Marketplace
+
+Primary Objective: Connect vehicle owners looking for drivers with drivers looking for vehicles and employment opportunities.
+
+User Roles: Vehicle Owner, Driver, Admin.
+
+Revenue Model: Subscription-based (Drivers + Vehicle Owners).
+
+Verification: Manual driver KYC approval through Admin Panel.
+
+Core Functionality: Vehicle listings, driver profiles, category-based search, filters and connection between both parties.
+
+Key UX Requirement: Simple and easy-to-use driver interface.
+
+Important points to confirm with the client before finalizing development scope:
+1. Will drivers and vehicle owners have different subscription plans and pricing?
+2. Will contact details be visible only after purchasing a subscription?
+3. Will vehicle owners also require document or business verification?
+4. Will the platform include in-app chat/calling, or will users communicate directly outside the platform?
+5. Will subscriptions have monthly, quarterly and yearly options?
+These are clarification points, not confirmed requirements from the call.

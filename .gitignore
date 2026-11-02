@@ -1,0 +1,30 @@
+# Secrets: never commit
+.env
+.env.*
+!.env.example
+*.keystore
+!debug.keystore
+keystore.properties
+
+# Dependencies and build output
+node_modules/
+dist/
+dist-smoke/
+build/
+.gradle/
+.cxx/
+*.apk
+*.aab
+mobile-app/release/
+
+# Server uploads (users' files live on the server, not in git)
+backend/uploads/public/*
+backend/uploads/private/*
+!backend/uploads/**/.gitkeep
+
+# Local tooling
+graphify-out/
+*.log
+.DS_Store
+.idea/
+.vscode/
