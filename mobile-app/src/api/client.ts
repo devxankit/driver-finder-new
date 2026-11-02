@@ -7,10 +7,11 @@
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-/** Development: this PC on the local Wi-Fi. Production: the VPS (https). */
-export const DEFAULT_API_URL = 'http://10.223.156.72:5000';
+/** Live API on Render. For local testing, long-press the logo on the phone-number screen. */
+export const DEFAULT_API_URL = 'https://driver-finder-api.onrender.com';
 
-const URL_KEY = 'driverfinder.apiUrl';
+// v2: ignore addresses saved by earlier test builds (e.g. http://localhost:5000).
+const URL_KEY = 'driverfinder.apiUrl.v2';
 const TOKEN_KEY = 'driverfinder.token';
 
 let baseUrl = DEFAULT_API_URL;
@@ -62,7 +63,8 @@ export class ApiError extends Error {
 
 type Opts = { method?: string; body?: unknown; query?: Record<string, string | number | undefined | null>; timeout?: number };
 
-export async function api<T = any>(path: string, { method = 'GET', body, query, timeout = 20000 }: Opts = {}): Promise<T> {
+// 60 s: the Render free plan sleeps when idle and needs up to ~50 s to wake on the first request.
+export async function api<T = any>(path: string, { method = 'GET', body, query, timeout = 60000 }: Opts = {}): Promise<T> {
   let url = `${baseUrl}/api${path}`;
   if (query) {
     const qs = Object.entries(query)

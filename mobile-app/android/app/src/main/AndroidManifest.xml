@@ -1,9 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!--
-      usesCleartextTraffic is on because the development backend runs on a PC
-      over plain http://. Turn it off once the API is on the VPS with https.
-    -->
+    <!-- The API is served over https (Render); plain http is not allowed. -->
 
     <uses-permission android:name="android.permission.INTERNET" />
 
@@ -14,7 +11,7 @@
       android:roundIcon="@mipmap/ic_launcher_round"
       android:allowBackup="false"
       android:theme="@style/AppTheme"
-      android:usesCleartextTraffic="true"
+      android:usesCleartextTraffic="false"
       android:supportsRtl="true">
       <activity
         android:name=".MainActivity"
