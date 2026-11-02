@@ -98,7 +98,7 @@ function Sidebar({ counts, collapsed, onToggle, onNavigate }) {
           </div>
         )}
       </div>
-      <nav className="scroll-thin flex-1 overflow-y-auto px-3 py-3">
+      <nav className="scroll-dark flex-1 overflow-y-auto px-3 py-3 [scrollbar-gutter:stable]">
         {NAV.map((g) => (
           <div key={g.group} className="mb-4">
             {!collapsed ? (
