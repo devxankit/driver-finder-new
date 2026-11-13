@@ -3,6 +3,9 @@
     <!-- The API is served over https (Render); plain http is not allowed. -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Drivers share where they are so owners see how far away they are (only while the app is open). -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
     <application
       android:name=".MainApplication"

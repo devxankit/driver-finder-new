@@ -52,4 +52,4 @@ export const DOC_LABELS = {
   selfie: 'Selfie',
 }
 
-export const CATEGORY_LABELS = { truck: 'Truck', bigtruck: 'Big Truck', tempo: 'Tempo', bus: 'Bus', minibus: 'Mini bus', car: 'Car', suv: 'SUV' }
+export const CATEGORY_LABELS = { truck: 'Truck', bigtruck: 'Big Truck (HCV)', tempo: 'Tempo', bus: 'Bus', minibus: 'Mini bus', car: 'Car', suv: 'SUV' }

@@ -1,23 +1,25 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Image, RefreshControl, ScrollView, Share, StatusBar, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Image, RefreshControl, ScrollView, Share, StatusBar, TextInput, View } from 'react-native';
+import { Alert } from '../i18n/Alert';
 import Pressable from '../components/Pressable';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import {
   BadgeCheck, Bell, Bookmark, BookmarkCheck, Briefcase, CalendarDays, Check, ChevronRight, Clock, Crown, FileText, Flag, Fuel, Gauge, Gift, Hourglass, House, IdCard,
-  Languages, Lock, LogOut, MapPin, MessageSquare, CircleQuestionMark, Route, Search, Settings, Share2, X,
+  Languages, Lock, LogOut, MapPin, MessageSquare, CircleQuestionMark, Route, Search, Settings, Share2, Wallet, X,
 } from 'lucide-react-native';
 import T from '../components/T';
 import { BackButton, BottomBar, Button, Card, Chip, EmptyState, IconButton, InfoTile, ListRow, Section, SectionHeader, StatusTag, Tag } from '../components/ui';
 import { CategoryRow, JobCard, JobRow, PersonPhoto } from '../components/brand';
 import { ContactRow, KycSheet, PaywallSheet } from '../components/sheets';
 import { CategoryKey, colors } from '../theme';
-import { cat, catLabel, hoursAgo, isTruck, Job } from '../data/catalog';
+import { ANYWHERE, cat, catLabel, hoursAgo, isTruck, Job, MAX_DRIVER_CITIES, payParts } from '../data/catalog';
 import { useStore } from '../store/AppStore';
 import { usePagedQuery, useQuery } from '../hooks/useQuery';
 import { DetailSkeleton, JobCardSkeleton } from '../components/Skeleton';
 import { api, ApiError, fileSource } from '../api/client';
 import { daysLeft, firstName, rupees, shortDate, timeAgo } from '../utils/format';
+import { askedBefore, useMyLocation } from '../utils/location';
 
 function useJobLabels() {
   const { t } = useTranslation();
@@ -122,7 +124,13 @@ export function DriverHomeScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const labels = useJobLabels();
-  const { driver, me, lang, notices, kyc, plan, hasPlan, saved, toggleSave } = useStore();
+  const { driver, me, lang, notices, kyc, plan, hasPlan, saved, toggleSave, applications } = useStore();
+  // The feed is cached; the applications list is live, so a job shows "Applied" right after applying.
+  const appliedTo = React.useMemo(() => new Map(applications.map((a) => [a.job.id, a.status])), [applications]);
+  const statusFor = (j: Job) => {
+    const st = appliedTo.get(j.id) ?? j.application?.status;
+    return st ? <StatusTag status={st} label={t(`my.${st}`)} /> : undefined;
+  };
   const [catKey, setCat] = useState<CategoryKey | null>(null);
   const [pay, setPay] = useState<'monthly' | 'trip' | null>(null);
   const [near, setNear] = useState(false);
@@ -140,6 +148,21 @@ export function DriverHomeScreen({ navigation }: any) {
   };
   const open = (j: Job) => navigation.navigate('JobDetail', { id: j.id, job: j });
   const heading = catKey ? t('home.jobsFor', { cat: catLabel(catKey, lang) }) : t('home.allJobs');
+
+  // Location: reported while the app is open so owners hiring for trips see how far away the driver is.
+  const loc = useMyLocation();
+  const enableLoc = loc.enable;
+  const [asked, setAsked] = useState(true);
+  const [locHidden, setLocHidden] = useState(false);
+  useEffect(() => {
+    // Ask once, the first time; after that only from the banner below.
+    askedBefore().then((was) => {
+      setAsked(was);
+      if (!was) enableLoc().catch(() => {}).finally(() => setAsked(true));
+    });
+  }, [enableLoc]);
+  const allowLoc = () => enableLoc().catch((e) => e?.code === 2 && Alert.alert(t('home.locTitle'), t('home.locOff')));
+  const showLocBanner = asked && !locHidden && (loc.status === 'denied' || loc.status === 'blocked');
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
@@ -165,7 +188,7 @@ export function DriverHomeScreen({ navigation }: any) {
               saved={saved.includes(j.id)}
               onSave={() => toggleSave(j.id)}
               onPress={() => open(j)}
-              status={j.application ? <StatusTag status={t(`my.${j.application.status}`)} /> : undefined}
+              status={statusFor(j)}
             />
           </View>
         )}
@@ -235,6 +258,28 @@ export function DriverHomeScreen({ navigation }: any) {
             <Chip label={t('common.trip')} selected={pay === 'trip'} onPress={() => setPay(pay === 'trip' ? null : 'trip')} />
             <Chip label={t('home.nearMe')} selected={near} onPress={() => setNear(!near)} icon={<MapPin size={14} color={colors.ink} />} />
           </ScrollView>
+
+          {showLocBanner ? (
+            <View style={{ marginTop: 12, flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 12, borderRadius: 14, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line }}>
+              <MapPin size={20} color={colors.ink} />
+              <View style={{ flex: 1, gap: 4 }}>
+                <T w="bold" size={14}>
+                  {t('home.locTitle')}
+                </T>
+                <T size={12} color={colors.ink2}>
+                  {t('home.locText')}
+                </T>
+                <Pressable onPress={allowLoc} hitSlop={8} accessibilityRole="button" style={{ alignSelf: 'flex-start', marginTop: 2 }}>
+                  <T w="extrabold" size={13} style={{ textDecorationLine: 'underline' }}>
+                    {loc.status === 'blocked' ? t('home.locSettings') : t('home.locAllow')}
+                  </T>
+                </Pressable>
+              </View>
+              <Pressable onPress={() => setLocHidden(true)} hitSlop={10} accessibilityLabel="Hide">
+                <X size={16} color={colors.muted} />
+              </Pressable>
+            </View>
+          ) : null}
 
           {kyc.status === 'pending' || kyc.status === 'rejected' ? (
             <Pressable onPress={() => navigation.navigate('KycStatus')} style={{ marginTop: 12, flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12, borderRadius: 14, backgroundColor: kyc.status === 'rejected' ? colors.redSoft : colors.neutralSoft }}>
@@ -320,6 +365,8 @@ export function JobDetailScreen({ navigation, route }: any) {
   const id: string = route.params.id;
   const q = useQuery<{ job: Job }>(`/jobs/${id}`, undefined, { initial: route.params.job ? { job: route.params.job } : null, live: ['applications', 'connections'] });
   const j = q.data?.job;
+  /** Set as soon as the apply call succeeds, before the job reloads. */
+  const [justApplied, setJustApplied] = useState<Job['application']>(null);
 
   if (!j) {
     return (
@@ -332,15 +379,25 @@ export function JobDetailScreen({ navigation, route }: any) {
 
   const o = j.owner;
   const c = cat(j.category);
-  const app = j.application;
+  const known = store.applications.find((a) => a.job.id === j.id);
+  const app = j.application ?? justApplied ?? (known ? { id: known.id, status: known.status, at: known.at } : null);
   const conn = store.connectionWith(j.ownerId);
   const connected = app?.status === 'Connected' || !!conn;
   const saved = store.saved.includes(j.id);
   const openChat = () => conn && navigation.navigate('ChatThread', { id: conn.id, name: o?.name ?? '' });
 
+  // On failure gate.run shows the error and the Apply button stays active for a retry.
   const apply = () =>
     gate.run(
-      () => store.apply(j.id),
+      async () => {
+        try {
+          setJustApplied(await store.apply(j.id));
+        } catch (e) {
+          // Already applied (e.g. from another phone): the server has it, so just show Applied.
+          if ((e as ApiError).code !== 'ALREADY_APPLIED') throw e;
+          setJustApplied({ id: '', status: 'Applied', at: Date.now() });
+        }
+      },
       () => {
         q.reload();
         Alert.alert(t('job.sent'), t('job.sentText'));
@@ -384,7 +441,7 @@ export function JobDetailScreen({ navigation, route }: any) {
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <IconButton
                 label="Share"
-                onPress={() => Share.share({ message: `${j.title} · ${rupees(j.pay)} ${j.payType === 'monthly' ? '/month' : '/trip'} · ${j.area}\nDriver Finder app` }).catch(() => {})}
+                onPress={() => Share.share({ message: `${j.title} · ${payParts(j).map((x) => `${rupees(x.amount)} /${x.unit}`).join(' + ')} · ${j.area}\nDriver Finder app` }).catch(() => {})}
                 style={{ backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line }}>
                 <Share2 size={19} color={colors.ink} />
               </IconButton>
@@ -398,22 +455,26 @@ export function JobDetailScreen({ navigation, route }: any) {
         <View style={{ backgroundColor: colors.white, paddingHorizontal: 18, paddingBottom: 16, gap: 10, borderBottomWidth: 1, borderBottomColor: colors.line }}>
           <View style={{ flexDirection: 'row', gap: 6, flexWrap: 'wrap' }}>
             <Tag label={`${catLabel(j.category, store.lang)} · ${j.vehicle}`} tone={j.category} />
-            <Tag label={j.payType === 'monthly' ? t('setup.monthlyPay') : t('common.trip')} tone={j.payType === 'monthly' ? 'monthly' : 'trip'} />
+            <Tag label={j.tripPay ? `${t('setup.monthlyPay')} + ${t('common.trip')}` : j.payType === 'monthly' ? t('setup.monthlyPay') : t('common.trip')} tone={j.payType === 'monthly' ? 'monthly' : 'trip'} />
           </View>
           <T w="extrabold" size={22} lh={28}>
             {j.title}
           </T>
           <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', padding: 14, borderRadius: 14, backgroundColor: colors.yellow50 }}>
-            <View>
-              <T w="semibold" size={12} color={colors.ink2}>
-                {j.payType === 'monthly' ? t('job.salary') : t('job.payPerTrip')}
-              </T>
-              <T w="extrabold" size={26}>
-                {rupees(j.pay)}
-                <T w="semibold" size={14} color={colors.ink2}>
-                  {j.payType === 'monthly' ? ` ${t('common.perMonth')}` : ` ${t('common.perTrip')}`}
-                </T>
-              </T>
+            <View style={{ gap: 8 }}>
+              {payParts(j).map((x) => (
+                <View key={x.unit}>
+                  <T w="semibold" size={12} color={colors.ink2}>
+                    {x.unit === 'month' ? t('job.salary') : t('job.payPerTrip')}
+                  </T>
+                  <T w="extrabold" size={26}>
+                    {rupees(x.amount)}
+                    <T w="semibold" size={14} color={colors.ink2}>
+                      {x.unit === 'month' ? ` ${t('common.perMonth')}` : ` ${t('common.perTrip')}`}
+                    </T>
+                  </T>
+                </View>
+              ))}
             </View>
             {j.allowance ? (
               <T w="bold" size={12} color={colors.yellowText} style={{ maxWidth: 130, textAlign: 'right' }}>
@@ -429,7 +490,7 @@ export function JobDetailScreen({ navigation, route }: any) {
         {app ? (
           <Section title={t('job.status')} style={{ marginTop: 8 }}>
             {app.status === 'Not selected' ? (
-              <StatusTag status={t('my.Not selected')} />
+              <StatusTag status="Not selected" label={t('my.Not selected')} />
             ) : (
               <View style={{ flexDirection: 'row', gap: 6 }}>
                 {(['Applied', 'Shortlisted', 'Connected'] as const).map((s, i) => {
@@ -454,15 +515,16 @@ export function JobDetailScreen({ navigation, route }: any) {
           ))}
         </View>
 
-        {isTruck(j.category) && (j.idleAllowance || j.mileage || j.bonus) ? (
-          <Section title="Truck details" style={{ marginTop: 8 }}>
+        {j.dailyBhatta || j.idleAllowance?.amount || j.mileage || (j.bonus && (j.bonus.amount || j.bonus.details)) ? (
+          <Section title="What the owner offers" style={{ marginTop: 8 }}>
             <View style={{ gap: 10 }}>
-              {j.idleAllowance ? (
-                <TruckFact icon={<Hourglass size={20} color={colors.ink} />} label="Idle allowance (bhatta)" value={`${rupees(j.idleAllowance.amount)} per day`} note={j.idleAllowance.afterHours ? `Paid after ${j.idleAllowance.afterHours} hours of waiting` : undefined} />
+              {j.dailyBhatta ? <OfferFact icon={<Wallet size={20} color={colors.ink} />} label="Daily bhatta" value={`${rupees(j.dailyBhatta)} per day`} note="For food and daily expenses" /> : null}
+              {j.idleAllowance?.amount ? (
+                <OfferFact icon={<Hourglass size={20} color={colors.ink} />} label="Idle allowance" value={`${rupees(j.idleAllowance.amount)} per day`} note={j.idleAllowance.afterHours ? `Paid after ${j.idleAllowance.afterHours} hours of waiting` : 'Paid while the vehicle waits'} />
               ) : null}
-              {j.mileage ? <TruckFact icon={<Fuel size={20} color={colors.ink} />} label="Diesel mileage" value={`${j.mileage} km per litre`} note="Expected average for this truck" /> : null}
+              {j.mileage ? <OfferFact icon={<Fuel size={20} color={colors.ink} />} label="Mileage offered" value={`${j.mileage} km per litre of diesel`} note="The diesel average the owner offers for this vehicle" /> : null}
               {j.bonus && (j.bonus.amount || j.bonus.details) ? (
-                <TruckFact icon={<Gift size={20} color={colors.ink} />} label="Bonus" value={j.bonus.amount ? rupees(j.bonus.amount) : 'Yes'} note={j.bonus.details || undefined} />
+                <OfferFact icon={<Gift size={20} color={colors.ink} />} label="Bonus / other benefits" value={j.bonus.amount ? rupees(j.bonus.amount) : j.bonus.details} note={j.bonus.amount ? j.bonus.details || undefined : undefined} />
               ) : null}
             </View>
           </Section>
@@ -550,7 +612,7 @@ export function JobDetailScreen({ navigation, route }: any) {
             </View>
           )
         ) : (
-          <Button title={t('job.applyNow')} onPress={apply} loading={gate.busy} style={{ flex: 1 }} />
+          <Button title={t('job.applyNow')} onPress={apply} loading={gate.busy} disabled={gate.busy} style={{ flex: 1 }} />
         )}
       </BottomBar>
       <GateSheets gate={gate} navigation={navigation} />
@@ -558,8 +620,8 @@ export function JobDetailScreen({ navigation, route }: any) {
   );
 }
 
-/** One truck-job detail (idle allowance, mileage, bonus) with a short explanation. */
-function TruckFact({ icon, label, value, note }: { icon: React.ReactNode; label: string; value: string; note?: string }) {
+/** One part of the owner's offer (bhatta, idle allowance, mileage, bonus) with a short explanation. */
+function OfferFact({ icon, label, value, note }: { icon: React.ReactNode; label: string; value: string; note?: string }) {
   return (
     <View style={{ flexDirection: 'row', gap: 12, padding: 12, borderRadius: 14, backgroundColor: colors.yellow50 }}>
       <View style={{ width: 40, height: 40, borderRadius: 12, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' }}>{icon}</View>
@@ -629,7 +691,7 @@ export function MyJobsScreen({ navigation }: any) {
         {tab === 'applied' ? (
           applied.length ? (
             applied.map((a) => (
-              <JobRow key={a.id} job={a.job} onPress={() => navigation.navigate('JobDetail', { id: a.job.id, job: a.job })} right={<StatusTag status={t(`my.${a.status}`)} />} sub={`${a.job.owner?.company ?? ''} · ${timeAgo(a.at)}`} />
+              <JobRow key={a.id} job={a.job} onPress={() => navigation.navigate('JobDetail', { id: a.job.id, job: a.job })} right={<StatusTag status={a.status} label={t(`my.${a.status}`)} />} sub={`${a.job.owner?.company ?? ''} · ${timeAgo(a.at)}`} />
             ))
           ) : (
             <EmptyState icon={<Briefcase size={30} color={colors.ink} />} title={t('my.emptyApplied')} text={t('my.emptyAppliedText')} action={<Button title={t('my.findJobs')} onPress={() => navigation.navigate('Jobs')} />} />
@@ -741,7 +803,7 @@ export function DriverProfileTab({ navigation }: any) {
           <T size={14} color={colors.ink2}>
             +91 {store.phone?.replace(/(\d{5})(\d{5})/, '$1 $2')} · {d?.city}
           </T>
-          <StatusTag status={store.kyc.status === 'approved' ? 'Verified' : store.kyc.status === 'rejected' ? 'Rejected' : 'Pending'} />
+          <StatusTag status={store.kyc.status === 'approved' ? 'Verified' : store.kyc.status === 'rejected' ? 'Rejected' : 'Pending'} style={{ alignSelf: 'center', maxWidth: '90%' }} />
           <View style={{ alignSelf: 'stretch', marginHorizontal: 18, marginTop: 10, gap: 6 }}>
             <T w="semibold" size={12} color={colors.ink2}>
               {t('profile.complete', { p: pct })}
@@ -782,6 +844,26 @@ export function DriverProfileTab({ navigation }: any) {
           <Button title="Edit profile" size="sm" variant="ghost" onPress={() => navigation.navigate('DriverSetup')} style={{ alignSelf: 'flex-start', marginTop: 12 }} />
         </Section>
 
+        <Section title="Your selected cities">
+          {d?.preferredLocations?.length ? (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+              {d.preferredLocations.map((x) => (
+                <View key={x} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, height: 36, paddingHorizontal: 12, borderRadius: 18, backgroundColor: x === ANYWHERE ? colors.yellow100 : colors.bg, borderWidth: 1, borderColor: colors.line }}>
+                  <MapPin size={14} color={colors.ink} />
+                  <T w="bold" size={13}>
+                    {x}
+                  </T>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <T size={13} color={colors.muted}>
+              No cities selected yet. Add up to {MAX_DRIVER_CITIES} cities so owners there can find you.
+            </T>
+          )}
+          <Button title={d?.preferredLocations?.length ? 'Change cities' : 'Add cities'} size="sm" variant="ghost" onPress={() => navigation.navigate('DriverSetup', { step: 4 })} style={{ alignSelf: 'flex-start', marginTop: 12 }} />
+        </Section>
+
         <Section style={{ marginTop: 8, paddingVertical: 4 }}>
           <ListRow icon={<Crown size={19} color={colors.ink} />} title={t('profile.plan')} subtitle={store.hasPlan && store.plan ? t('plans.active', { date: shortDate(store.plan.expiresAt) }) : t('profile.noPlan')} onPress={() => navigation.navigate(store.hasPlan ? 'MyPlan' : 'Plans')} />
           <ListRow icon={<FileText size={19} color={colors.ink} />} title={t('profile.documents')} subtitle={store.kyc.status === 'approved' ? t('common.verified') : t('status.pendingTitle')} onPress={() => navigation.navigate('Documents')} />
@@ -793,7 +875,7 @@ export function DriverProfileTab({ navigation }: any) {
           <ListRow icon={<LogOut size={19} color={colors.redText} />} title={t('profile.logout')} danger onPress={confirmLogout} last />
         </Section>
         <T size={12} color={colors.muted} center style={{ marginTop: 16 }}>
-          Driver Finder 1.2.0
+          Driver Finder 1.3.0
         </T>
       </ScrollView>
     </View>

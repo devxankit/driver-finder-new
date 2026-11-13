@@ -1,11 +1,14 @@
 /**
- * Translations. English and Hindi cover every driver-facing screen; the other
- * launch languages cover sign-in, role choice, tabs and the job feed basics
- * and fall back to English elsewhere. All non-English text is a draft for the
- * client's language reviewers. To add a language, add a block here.
+ * Translations for the i18next keys (`t('home.hello')`). English is the source.
+ * Hindi and the core screens of the other languages are written by hand here;
+ * every key they don't cover is filled from generated/<lang>.json (machine
+ * translated by `npm run i18n`), so no screen falls back to English. Text
+ * written directly in the screens is translated by auto.ts. All non-English
+ * text is a draft for the client's language reviewers.
  */
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
+import { GENERATED } from './generated';
 
 const en = {
   common: {
@@ -54,6 +57,8 @@ const en = {
     planText: 'Browsing is free. Apply and call owners with a plan.', planActive: 'Driver plan active', daysLeft: '{{n}} days left',
     jobsFor: '{{cat}} jobs', allJobs: 'Jobs near you', newest: 'Newest', noJobs: 'No jobs match these filters', clear: 'Clear filters',
     posted: '{{h}}h ago', applied: '{{n}} applied', kycBanner: 'Verification pending. You can apply once approved.', all: 'All',
+    locTitle: 'Share your location', locText: 'Owners hiring for trips see how far you are, so nearby work reaches you first.',
+    locAllow: 'Allow location', locSettings: 'Open settings', locOff: 'Location is off. Turn on location (GPS) on your phone.',
   },
   job: {
     salary: 'Salary', payPerTrip: 'Pay per trip', route: 'Route', duty: 'Duty', licence: 'Licence', experience: 'Experience', stay: 'Stay',
@@ -138,6 +143,8 @@ const hi: typeof en = {
     planText: 'देखना मुफ़्त है। प्लान से आवेदन करें और मालिकों को कॉल करें।', planActive: 'ड्राइवर प्लान चालू', daysLeft: '{{n}} दिन बाकी',
     jobsFor: '{{cat}} की नौकरियाँ', allJobs: 'आपके पास की नौकरियाँ', newest: 'नई पहले', noJobs: 'इन फ़िल्टर से कोई नौकरी नहीं मिली',
     clear: 'फ़िल्टर हटाएँ', posted: '{{h}} घंटे पहले', applied: '{{n}} ने आवेदन किया', kycBanner: 'जाँच बाकी है। मंज़ूरी के बाद आवेदन कर सकेंगे।', all: 'सभी',
+    locTitle: 'अपनी लोकेशन शेयर करें', locText: 'ट्रिप के लिए ड्राइवर ढूँढ रहे मालिक देख सकेंगे कि आप कितनी दूर हैं, ताकि पास का काम पहले आप तक पहुँचे।',
+    locAllow: 'लोकेशन चालू करें', locSettings: 'सेटिंग्स खोलें', locOff: 'लोकेशन बंद है। फ़ोन में लोकेशन (GPS) चालू करें।',
   },
   job: {
     salary: 'वेतन', payPerTrip: 'प्रति ट्रिप भुगतान', route: 'रूट', duty: 'ड्यूटी', licence: 'लाइसेंस', experience: 'अनुभव', stay: 'रहना',
@@ -196,7 +203,33 @@ const core = (
   job: { applyNow },
 });
 
-const resources = {
+type Tree = { [key: string]: string | Tree };
+
+/** Generated flat keys ("home.hello") as a tree, with the hand-written `own` text on top. */
+function complete(lang: string, own: Tree): Tree {
+  const out: Tree = {};
+  for (const [key, text] of Object.entries(GENERATED[lang]?.keys ?? {})) {
+    const path = key.split('.');
+    let at = out;
+    path.slice(0, -1).forEach((p) => {
+      if (typeof at[p] !== 'object') at[p] = {};
+      at = at[p] as Tree;
+    });
+    at[path[path.length - 1]] = text;
+  }
+  const lay = (to: Tree, from: Tree) => {
+    for (const [k, v] of Object.entries(from)) {
+      if (typeof v === 'object') {
+        if (typeof to[k] !== 'object') to[k] = {};
+        lay(to[k] as Tree, v);
+      } else to[k] = v;
+    }
+  };
+  lay(out, own);
+  return out;
+}
+
+const written = {
   en: { translation: en },
   hi: { translation: hi },
   mr: {
@@ -284,6 +317,10 @@ const resources = {
     ),
   },
 };
+
+const resources = Object.fromEntries(
+  Object.entries(written).map(([lang, r]) => [lang, { translation: lang === 'en' ? r.translation : complete(lang, r.translation as Tree) }]),
+);
 
 i18n.use(initReactI18next).init({
   resources,

@@ -83,7 +83,7 @@ const payText = (d) => {
 }
 
 /** Driver card for owners. The phone number is only included once connected. */
-export function driverOut(u, { phone = false, docs = [], link = null } = {}) {
+export function driverOut(u, { phone = false, docs = [], link = null, distanceKm = null } = {}) {
   const d = u.driver ?? {}
   const has = (k) => docs.some((x) => x.key === k && x.status === 'approved')
   return {
@@ -106,6 +106,8 @@ export function driverOut(u, { phone = false, docs = [], link = null } = {}) {
     phone: phone ? u.phone : null,
     docs: { licence: has('licenceFront'), aadhaar: has('aadhaarFront'), police: has('policeVerification') },
     link,
+    /** Km from the owner's location or the job's pickup; null when either is unknown. */
+    distanceKm,
   }
 }
 
@@ -122,6 +124,8 @@ export function jobOut(j, { owner = null, ownerVehicles = 0, application = null,
     title: j.title,
     payType: j.payType,
     pay: j.pay,
+    tripPay: j.tripPay || null,
+    dailyBhatta: j.dailyBhatta || null,
     allowance: j.allowance || undefined,
     area: j.area,
     route: j.route,
@@ -150,9 +154,13 @@ export function vehicleOut(v) {
     year: v.year,
     driver: v.driverName || undefined,
     photo: publicUrl(v.photo),
+    photos: vehiclePhotos(v).map(publicUrl),
     status: v.status,
   }
 }
+
+/** Stored paths of a vehicle's images; vehicles saved before galleries have just `photo`. */
+export const vehiclePhotos = (v) => (v.photos?.length ? [...v.photos] : v.photo ? [v.photo] : [])
 
 export function notificationOut(n) {
   return { id: id(n), title: n.title, text: n.text, data: n.data ?? null, read: n.read, at: new Date(n.createdAt).getTime() }

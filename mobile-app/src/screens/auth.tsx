@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, ScrollView, StatusBar, TextInput, View } from 'react-native';
+import { ActivityIndicator, Modal, ScrollView, StatusBar, TextInput, View } from 'react-native';
+import { Alert } from '../i18n/Alert';
 import Pressable from '../components/Pressable';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -77,7 +78,7 @@ export function LanguageScreen({ navigation, route }: any) {
         <T w="extrabold" size={26} style={{ marginTop: 18 }}>
           {t('lang.title')}
         </T>
-        <T w="semibold" size={15} color={colors.ink2} style={{ marginTop: 4 }}>
+        <T raw w="semibold" size={15} color={colors.ink2} style={{ marginTop: 4 }}>
           अपनी भाषा चुनें · Choose your language
         </T>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 18 }}>
@@ -105,12 +106,12 @@ export function LanguageScreen({ navigation, route }: any) {
                   opacity: pressed ? 0.85 : 1,
                 })}>
                 <View style={{ width: 46, height: 46, borderRadius: 12, backgroundColor: l.bg, alignItems: 'center', justifyContent: 'center' }}>
-                  <T w="bold" size={22} color={l.fg}>
+                  <T raw w="bold" size={22} color={l.fg}>
                     {l.letter}
                   </T>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <T w="bold" size={17}>
+                  <T raw w="bold" size={17}>
                     {l.native}
                   </T>
                   <T size={12} color={colors.muted}>
@@ -284,13 +285,13 @@ export function OtpScreen({ navigation, route }: any) {
           maxLength={6}
           style={{ position: 'absolute', opacity: 0, height: 1, width: 1, fontFamily: font.regular }}
         />
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 18 }}>
-          <Pressable onPress={() => navigation.goBack()} hitSlop={8}>
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', columnGap: 16, rowGap: 10, marginTop: 18 }}>
+          <Pressable onPress={() => navigation.goBack()} hitSlop={8} style={{ flexShrink: 1 }}>
             <T w="bold" size={14}>
               {t('otp.change')}
             </T>
           </Pressable>
-          <Pressable disabled={left > 0} onPress={resend} hitSlop={8}>
+          <Pressable disabled={left > 0} onPress={resend} hitSlop={8} style={{ flexShrink: 1 }}>
             <T w="bold" size={14} color={left > 0 ? colors.muted : colors.ink}>
               {left > 0 ? t('otp.resendIn', { s: left }) : t('otp.resend')}
             </T>

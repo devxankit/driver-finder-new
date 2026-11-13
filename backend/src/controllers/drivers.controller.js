@@ -8,6 +8,7 @@ import { driverOut, jobOut, ownerOut } from '../services/serialize.js'
 import { notify } from '../services/notify.service.js'
 import { ensureConnection, notifyConnected } from '../services/connect.service.js'
 import { syncUsers } from '../services/realtime.js'
+import { distanceKm, freshFilter, freshPoint, geoJson, point } from '../services/geo.service.js'
 
 /**
  * The owner's relationship with each driver, in the app's DriverLink terms:
@@ -34,7 +35,11 @@ async function linksFor(ownerId, driverIds = null) {
 
 const visibleDrivers = { role: 'driver', 'kyc.status': 'approved', status: 'active', deletedAt: null }
 
-/** GET /api/drivers?category=&city=&payType=&minExp=&q= (owner search: approved drivers only) */
+/**
+ * GET /api/drivers?category=&city=&payType=&minExp=&q=&lat=&lng=&near=1 (owner search: approved drivers only)
+ * With lat/lng each driver carries `distanceKm` (when their location is recent).
+ * near=1 lists only drivers with a recent location, nearest first.
+ */
 export async function searchDrivers(req, res) {
   const { category, city, payType, minExp, q } = req.query
   const filter = { ...visibleDrivers }
@@ -43,25 +48,45 @@ export async function searchDrivers(req, res) {
   if (payType === 'monthly' || payType === 'trip') filter['driver.payPref'] = { $in: [payType, 'both'] }
   if (minExp) filter['driver.experience'] = { $gte: Number(minExp) || 0 }
   if (q) filter.$or = [{ name: like(q) }, { city: like(q) }]
+  const from = point(req.query.lat, req.query.lng)
+  const near = Boolean(from) && req.query.near === '1'
 
   const { page, limit, skip } = paging(req.query, 30)
-  const [drivers, total] = await Promise.all([
-    User.find(filter).sort({ 'driver.experience': -1, createdAt: -1 }).skip(skip).limit(limit).lean(),
-    User.countDocuments(filter),
-  ])
+  let drivers
+  let total
+  if (near) {
+    const geoFilter = { ...filter, ...freshFilter() }
+    ;[drivers, total] = await Promise.all([
+      User.aggregate([
+        { $geoNear: { near: geoJson(from), distanceField: 'distM', spherical: true, query: geoFilter } },
+        { $skip: skip },
+        { $limit: limit },
+      ]),
+      User.countDocuments({ ...geoFilter, geo: { $exists: true } }),
+    ])
+  } else {
+    ;[drivers, total] = await Promise.all([
+      User.find(filter).sort({ 'driver.experience': -1, createdAt: -1 }).skip(skip).limit(limit).lean(),
+      User.countDocuments(filter),
+    ])
+  }
   const ids = drivers.map((d) => d._id)
   const [docs, links] = await Promise.all([Document.find({ user: { $in: ids } }).lean(), linksFor(req.user._id, ids)])
   res.json({
     success: true,
     drivers: drivers.map((d) =>
-      driverOut(d, { docs: docs.filter((x) => String(x.user) === String(d._id)), link: links[String(d._id)] ?? null })
+      driverOut(d, {
+        docs: docs.filter((x) => String(x.user) === String(d._id)),
+        link: links[String(d._id)] ?? null,
+        distanceKm: from ? distanceKm(from, freshPoint(d)) : null,
+      })
     ),
     total,
     page,
   })
 }
 
-/** GET /api/drivers/:id (owner). Phone only when connected and the owner's plan is active. */
+/** GET /api/drivers/:id?lat=&lng= (owner). Phone only when connected and the owner's plan is active. */
 export async function driverDetail(req, res) {
   assertId(req.params.id, 'Driver')
   const d = await User.findOne({ _id: req.params.id, role: 'driver', deletedAt: null }).lean()
@@ -79,7 +104,7 @@ export async function driverDetail(req, res) {
   ])
   res.json({
     success: true,
-    driver: driverOut(d, { docs, link, phone: Boolean(conn && sub) }),
+    driver: driverOut(d, { docs, link, phone: Boolean(conn && sub), distanceKm: distanceKm(point(req.query.lat, req.query.lng), freshPoint(d)) }),
     connectionId: conn ? String(conn._id) : null,
   })
 }
@@ -138,10 +163,11 @@ export async function listRequests(req, res) {
   const isDriver = req.user.role === 'driver'
   const reqs = await HireRequest.find(isDriver ? { driver: req.user._id } : { owner: req.user._id }).sort({ createdAt: -1 }).limit(100).lean()
   const otherIds = reqs.map((r) => (isDriver ? r.owner : r.driver))
-  const [others, jobs, counts] = await Promise.all([
+  const [others, jobs, counts, sub] = await Promise.all([
     User.find({ _id: { $in: otherIds } }).lean(),
     Job.find({ _id: { $in: reqs.map((r) => r.job).filter(Boolean) } }).lean(),
     isDriver ? Vehicle.aggregate([{ $match: { owner: { $in: otherIds } } }, { $group: { _id: '$owner', n: { $sum: 1 } } }]) : [],
+    isDriver ? null : activeSubscription(req.user),
   ])
   const otherBy = Object.fromEntries(others.map((u) => [String(u._id), u]))
   const jobBy = Object.fromEntries(jobs.map((j) => [String(j._id), j]))
@@ -161,7 +187,8 @@ export async function listRequests(req, res) {
           ownerId: String(r.owner),
           driverId: String(r.driver),
           owner: isDriver ? ownerOut(other, { vehicles: vBy[String(other._id)] ?? 0 }) : undefined,
-          driver: isDriver ? undefined : driverOut(other),
+          // An accepted request means they are connected: the owner can call once their plan is active.
+          driver: isDriver ? undefined : driverOut(other, { phone: Boolean(sub) && r.status === 'Accepted' }),
           job: job ? jobOut(job, { owner: isDriver ? other : null }) : null,
         }
       }),

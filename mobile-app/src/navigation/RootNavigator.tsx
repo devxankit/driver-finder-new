@@ -15,7 +15,7 @@ import { LanguageScreen, OtpScreen, PhoneScreen, RegisterScreen, RoleScreen, Spl
 import { DriverSetupScreen, KycScreen, KycStatusScreen } from '../screens/onboarding';
 import { DriverHomeScreen, DriverProfileTab, JobDetailScreen, MyJobsScreen, SavedJobsScreen } from '../screens/driver';
 import {
-  AddVehicleScreen, DriverViewScreen, OwnerHomeScreen, OwnerJobsScreen, OwnerProfileTab, OwnerSetupScreen, PostJobScreen, VehiclesScreen,
+  AddVehicleScreen, VehicleDetailScreen, DriverViewScreen, OwnerHomeScreen, OwnerJobsScreen, OwnerProfileTab, OwnerSetupScreen, PostJobScreen, VehiclesScreen,
 } from '../screens/owner';
 import {
   CheckoutScreen, DocumentsScreen, HelpScreen, LegalScreen, MyPlanScreen, NotificationsScreen, PlansScreen, SettingsScreen,
@@ -139,6 +139,7 @@ export default function RootNavigator() {
         <Stack.Screen name="SavedJobs" component={SavedJobsScreen} />
 
         <Stack.Screen name="AddVehicle" component={AddVehicleScreen} options={{ animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="VehicleDetail" component={VehicleDetailScreen} />
         <Stack.Screen name="PostJob" component={PostJobScreen} options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="OwnerJobs" component={OwnerJobsScreen} />
         <Stack.Screen name="DriverView" component={DriverViewScreen} />

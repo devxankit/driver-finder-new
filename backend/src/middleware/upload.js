@@ -14,8 +14,8 @@ const EXT = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 
 
 export const uploadRoot = path.resolve(env.upload.root)
 
-function makeUploader(visibility, folder, mimeTypes) {
-  return multer({
+function makeUploader(visibility, folder, mimeTypes, many = 0) {
+  const m = multer({
     storage: multer.diskStorage({
       destination(req, file, cb) {
         const dir = path.join(uploadRoot, visibility, folder)
@@ -26,13 +26,18 @@ function makeUploader(visibility, folder, mimeTypes) {
         cb(null, `${Date.now().toString(36)}-${crypto.randomBytes(6).toString('hex')}${EXT[file.mimetype] || ''}`)
       },
     }),
-    limits: { fileSize: env.upload.maxFileSizeBytes, files: 1, fields: 20 },
+    limits: { fileSize: env.upload.maxFileSizeBytes, files: many || 1, fields: 20 },
     fileFilter(req, file, cb) {
       if (mimeTypes.includes(file.mimetype)) cb(null, true)
       else cb(ApiError.validation('Upload a JPG, PNG or WebP image.', { file: 'Unsupported file type.' }))
     },
-  }).single('file')
+  })
+  return many ? m.array('files', many) : m.single('file')
 }
+
+/** Most photos a vehicle can have; at least MIN_VEHICLE_PHOTOS are required. */
+export const MAX_VEHICLE_PHOTOS = 8
+export const MIN_VEHICLE_PHOTOS = 2
 
 /** Path stored in the database, relative to the upload root, e.g. "public/photos/abc.jpg". */
 export const storedPath = (file) => path.relative(uploadRoot, file.path).split(path.sep).join('/')
@@ -49,8 +54,20 @@ export function removeStored(stored) {
 
 export const uploadPhoto = makeUploader('public', 'photos', env.upload.imageMimeTypes)
 export const uploadVehiclePhoto = makeUploader('public', 'vehicles', env.upload.imageMimeTypes)
+/** Several vehicle photos in one request (multipart field "files"). */
+export const uploadVehiclePhotos = makeUploader('public', 'vehicles', env.upload.imageMimeTypes, MAX_VEHICLE_PHOTOS)
 export const uploadCategoryImage = makeUploader('public', 'categories', env.upload.imageMimeTypes)
 export const uploadKycDoc = makeUploader('private', 'kyc', env.upload.docMimeTypes)
+
+/** Deletes the files of a request that ends in an error (e.g. a validation failure after upload). */
+export function discardOnError(req, res, next) {
+  res.on('finish', () => {
+    if (res.statusCode < 400) return
+    const files = req.files ?? (req.file ? [req.file] : [])
+    for (const f of Array.isArray(files) ? files : Object.values(files).flat()) fs.promises.unlink(f.path).catch(() => {})
+  })
+  next()
+}
 
 export function requireFile(req, res, next) {
   if (!req.file) throw ApiError.validation('Please attach a file.', { file: 'File is required.' })

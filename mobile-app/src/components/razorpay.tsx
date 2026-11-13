@@ -4,7 +4,8 @@
  * collects the payment and reports the signed result back.
  */
 import React, { useRef } from 'react';
-import { Alert, Linking, Modal, View } from 'react-native';
+import { Linking, Modal, View } from 'react-native';
+import { Alert } from '../i18n/Alert';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Lock, X } from 'lucide-react-native';

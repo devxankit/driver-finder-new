@@ -46,7 +46,7 @@ const PLAY_URL = import.meta.env.VITE_PLAY_STORE_URL || ''
 /** Shown before /api/meta loads, or if the API is down. */
 const FALLBACK_CATEGORIES = [
   { key: 'truck', label: 'Truck', labels: { hi: 'ट्रक' }, img: tTruck },
-  { key: 'bigtruck', label: 'Big Truck', labels: { hi: 'बड़ा ट्रक' }, img: tBigtruck },
+  { key: 'bigtruck', label: 'Big Truck (HCV)', labels: { hi: 'बड़ा ट्रक (HCV)' }, img: tBigtruck },
   { key: 'tempo', label: 'Tempo', labels: { hi: 'टेम्पो' }, img: tTempo },
   { key: 'bus', label: 'Bus', labels: { hi: 'बस' }, img: tBus },
   { key: 'minibus', label: 'Mini bus', labels: { hi: 'मिनी बस' }, img: tMinibus },
@@ -244,7 +244,7 @@ function PhoneMock({ t }) {
   const drivers = [
     [pMahesh, 'Mahesh Patil', '12 yrs · HMV · Nashik', 'Truck'],
     [pSuresh, 'Suresh Yadav', '8 yrs · LMV · Thane', 'Tempo'],
-    [pImran, 'Imran Shaikh', '10 yrs · HMV · Pune', 'Big Truck'],
+    [pImran, 'Imran Shaikh', '10 yrs · HMV · Pune', 'Big Truck (HCV)'],
     [pArjun, 'Arjun Rathore', '6 yrs · LMV · Jaipur', 'SUV'],
   ]
   return (

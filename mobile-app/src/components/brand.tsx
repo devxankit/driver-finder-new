@@ -23,11 +23,11 @@ export function Logo({ size = 40, style }: { size?: number; style?: StyleProp<Vi
 export function Wordmark({ size = 18, light }: { size?: number; light?: boolean }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-      <T w="extrabold" size={size} color={light ? colors.white : colors.ink}>
+      <T raw w="extrabold" size={size} color={light ? colors.white : colors.ink}>
         Driver
       </T>
       <View style={{ backgroundColor: colors.yellow, borderRadius: size * 0.32, paddingHorizontal: size * 0.32, paddingVertical: 1 }}>
-        <T w="extrabold" size={size} color={colors.ink}>
+        <T raw w="extrabold" size={size} color={colors.ink}>
           Finder
         </T>
       </View>
@@ -183,8 +183,8 @@ export function CategoryPick({ k, on, onPress }: { k: CategoryKey; on: boolean; 
 
 /* --------------------------------------------------------------- Job cards */
 
-export function PayTag({ type, labels }: { type: 'monthly' | 'trip'; labels: { monthly: string; trip: string } }) {
-  return <Tag label={type === 'monthly' ? labels.monthly : labels.trip} tone={type === 'monthly' ? 'monthly' : 'trip'} />;
+export function PayTag({ type, both, labels }: { type: 'monthly' | 'trip'; both?: boolean; labels: { monthly: string; trip: string } }) {
+  return <Tag label={both ? `${labels.monthly} + ${labels.trip}` : type === 'monthly' ? labels.monthly : labels.trip} tone={type === 'monthly' ? 'monthly' : 'trip'} />;
 }
 
 export function JobCard({
@@ -227,21 +227,28 @@ export function JobCard({
       </View>
       <View style={{ padding: 14, gap: 7 }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <T w="extrabold" size={21}>
+          <T w="extrabold" size={21} style={{ flexShrink: 1 }}>
             {rupees(job.pay)}
             <T w="semibold" size={13} color={colors.muted}>
               {job.payType === 'monthly' ? ` ${labels.perMonth}` : ` ${labels.perTrip}`}
             </T>
+            {job.tripPay ? (
+              <T w="bold" size={14} color={colors.ink2}>
+                {` + ${rupees(job.tripPay)}`}
+                <T w="semibold" size={13} color={colors.muted}>{` ${labels.perTrip}`}</T>
+              </T>
+            ) : null}
           </T>
-          {status ?? <PayTag type={job.payType} labels={labels} />}
+          {status ?? <PayTag type={job.payType} both={!!job.tripPay} labels={labels} />}
         </View>
         <T w="bold" size={15}>
           {job.title}
         </T>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-          {job.idleAllowance ? <Tag label={`Bhatta ${rupees(job.idleAllowance.amount)}/day`} tone="yellow" /> : null}
+          {job.dailyBhatta ? <Tag label={`Bhatta ${rupees(job.dailyBhatta)}/day`} tone="yellow" /> : null}
+          {job.idleAllowance?.amount ? <Tag label={`Idle ${rupees(job.idleAllowance.amount)}/day`} tone="yellow" /> : null}
           {job.mileage ? <Tag label={`${job.mileage} km/l`} tone="neutral" /> : null}
-          {job.bonus?.amount ? <Tag label={`Bonus ${rupees(job.bonus.amount)}`} tone="green" /> : null}
+          {job.bonus?.amount ? <Tag label={`Bonus ${rupees(job.bonus.amount)}`} tone="green" /> : job.bonus?.details ? <Tag label="Bonus" tone="green" /> : null}
           {[job.licence, job.experience, job.idleAllowance ? '' : job.stay].filter((x) => x && x !== 'Not provided').map((x) => (
             <Tag key={x} label={x} tone="neutral" />
           ))}
@@ -273,11 +280,16 @@ export function JobRow({ job, onPress, right, sub }: { job: Job; onPress: () => 
       </View>
       <View style={{ flex: 1, gap: 3, justifyContent: 'center' }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
-          <T w="extrabold" size={16}>
+          <T w="extrabold" size={16} style={{ flexShrink: 1 }} numberOfLines={1}>
             {rupees(job.pay)}
             <T w="semibold" size={12} color={colors.muted}>
               {job.payType === 'monthly' ? ' /month' : ' /trip'}
             </T>
+            {job.tripPay ? (
+              <T w="semibold" size={12} color={colors.muted}>
+                {` + ${rupees(job.tripPay)} /trip`}
+              </T>
+            ) : null}
           </T>
           {right}
         </View>

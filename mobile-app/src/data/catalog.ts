@@ -32,12 +32,12 @@ const BUNDLED: Record<string, { tile: ImageSourcePropType; photo: ImageSourcePro
   suv: { tile: require('../assets/images/t-suv.jpg'), photo: require('../assets/images/v-suv.jpg') },
 };
 
-const DEFAULT_LABELS: Record<string, string> = { truck: 'Truck', bigtruck: 'Big Truck', tempo: 'Tempo', bus: 'Bus', minibus: 'Mini bus', car: 'Car', suv: 'SUV' };
+const DEFAULT_LABELS: Record<string, string> = { truck: 'Truck', bigtruck: 'Big Truck (HCV)', tempo: 'Tempo', bus: 'Bus', minibus: 'Mini bus', car: 'Car', suv: 'SUV' };
 
 /** Live list (mutated in place by applyMeta so every importer sees updates). */
 export const categories: Category[] = Object.keys(BUNDLED).map((key) => ({ key, label: DEFAULT_LABELS[key], ...BUNDLED[key], types: key === 'bigtruck' ? ['Bag truck', 'Bulker truck', 'Container truck'] : undefined }));
 
-/** Truck categories carry idle allowance, diesel mileage and bonus on their jobs. */
+/** Truck categories also carry an idle allowance (paid while the truck waits) on their jobs. */
 export const isTruck = (k?: string | null) => k === 'truck' || k === 'bigtruck';
 
 const UNKNOWN: Category = { key: 'other', label: 'Vehicle', ...BUNDLED.truck };
@@ -70,6 +70,10 @@ export const support: Support = {};
 export const fees = { registration: 1 };
 
 export const ANYWHERE = 'Anywhere in India';
+
+/** Most cities a driver can choose to work in (the server checks the same limit). */
+export const MAX_DRIVER_CITIES = 5;
+export const MAX_CITIES_MSG = 'You can select a maximum of 5 cities.';
 
 export type Meta = {
   categories: { key: string; label: string; labels?: Record<string, string>; image: string | null; types?: string[] }[];
@@ -134,7 +138,12 @@ export type Job = {
   year: string;
   title: string;
   payType: PayType;
+  /** Monthly salary, or pay per trip for a per-trip job. */
   pay: number;
+  /** "Both": per-trip pay offered on top of the monthly salary. */
+  tripPay?: number | null;
+  /** Daily bhatta the owner offers, rupees per day. */
+  dailyBhatta?: number | null;
   allowance?: string;
   area: string;
   route: string;
@@ -174,6 +183,8 @@ export type Driver = {
   phone: string | null;
   docs: { licence: boolean; aadhaar: boolean; police: boolean };
   link: DriverLink | null;
+  /** Km from the owner (or the job's pickup point); null when either location is unknown. */
+  distanceKm?: number | null;
 };
 
 export const hoursAgo = (at: number) => Math.max(0, Math.floor((Date.now() - at) / 3600000));
@@ -189,6 +200,10 @@ export const languages = [
   { id: 'te', native: 'తెలుగు', en: 'Telugu', letter: 'తె', fg: '#B4366B', bg: '#FCE7F0' },
   { id: 'kn', native: 'ಕನ್ನಡ', en: 'Kannada', letter: 'ಕ', fg: '#6B4E00', bg: '#FFF8E1' },
 ];
+
+/** "₹15,000 /month", "₹1,500 /trip", or both for jobs that pay monthly and per trip. */
+export const payParts = (j: Pick<Job, 'payType' | 'pay' | 'tripPay'>) =>
+  j.payType === 'trip' ? [{ amount: j.pay, unit: 'trip' as const }] : [{ amount: j.pay, unit: 'month' as const }, ...(j.tripPay ? [{ amount: j.tripPay, unit: 'trip' as const }] : [])];
 
 export const quickReplies = {
   driver: ['I am interested', 'When can I start?', 'Please share the address', 'I will call you'],

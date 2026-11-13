@@ -76,6 +76,16 @@ const userSchema = new Schema(
       whatsapp: { type: Boolean, default: true },
     },
 
+    /**
+     * Last device location the app reported (GeoJSON, [lng, lat]). Drivers share
+     * it so owners can see how far they are; owners' is the fallback pickup point.
+     */
+    geo: {
+      type: { type: String, enum: ['Point'] },
+      coordinates: { type: [Number], default: undefined },
+    },
+    geoAt: Date,
+
     lastSeenAt: Date,
     deletedAt: Date,
     /** Sample accounts from `npm run seed -- --demo`; `npm run seed -- --remove-demo` deletes them. */
@@ -85,6 +95,7 @@ const userSchema = new Schema(
 )
 
 userSchema.index({ role: 1, 'kyc.status': 1, status: 1 })
+userSchema.index({ geo: '2dsphere' })
 userSchema.index({ name: 'text', city: 'text', 'owner.company': 'text' })
 
 export default mongoose.model('User', userSchema)

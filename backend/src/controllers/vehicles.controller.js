@@ -1,8 +1,10 @@
 import { Vehicle } from '../models/index.js'
 import { ApiError } from '../utils/ApiError.js'
 import { assertId } from '../utils/helpers.js'
-import { vehicleOut } from '../services/serialize.js'
-import { removeStored, storedPath } from '../middleware/upload.js'
+import { vehicleOut, vehiclePhotos } from '../services/serialize.js'
+import { MAX_VEHICLE_PHOTOS, MIN_VEHICLE_PHOTOS, publicUrl, removeStored, storedPath } from '../middleware/upload.js'
+
+const TOO_FEW = `Please upload at least ${MIN_VEHICLE_PHOTOS} vehicle images.`
 
 const mine = async (req) => {
   assertId(req.params.id, 'Vehicle')
@@ -16,10 +18,45 @@ export async function listVehicles(req, res) {
   res.json({ success: true, vehicles: items.map(vehicleOut) })
 }
 
+/**
+ * POST /api/vehicles: JSON, or multipart with the images in "files" (the app
+ * from 1.3.0 sends at least two). JSON without images stays accepted for older
+ * app versions, which upload one photo afterwards.
+ */
 export async function addVehicle(req, res) {
   const { driver, ...data } = req.body
-  const v = await Vehicle.create({ ...data, driverName: driver ?? '', owner: req.user._id })
+  const photos = (req.files ?? []).map(storedPath)
+  if (req.is('multipart/form-data') && photos.length < MIN_VEHICLE_PHOTOS) {
+    throw ApiError.validation(TOO_FEW, { files: TOO_FEW })
+  }
+  const v = await Vehicle.create({ ...data, driverName: driver ?? '', owner: req.user._id, photos, photo: photos[0] ?? null })
   res.status(201).json({ success: true, vehicle: vehicleOut(v) })
+}
+
+/**
+ * PUT /api/vehicles/:id/photos (multipart): the full new set of images.
+ * "keep" is a JSON list of the current image URLs to keep, in order; "files"
+ * are new images added after them. Removed images are deleted from storage.
+ */
+export async function setVehiclePhotos(req, res) {
+  const v = await mine(req)
+  let keep
+  try {
+    keep = JSON.parse(req.body.keep || '[]')
+    if (!Array.isArray(keep)) throw new Error()
+  } catch {
+    throw ApiError.validation('Invalid list of images to keep.', { keep: 'Invalid value.' })
+  }
+  const current = vehiclePhotos(v)
+  const kept = [...new Set(keep.map((u) => current.find((p) => publicUrl(p) === u)).filter(Boolean))]
+  const next = [...kept, ...(req.files ?? []).map(storedPath)]
+  if (next.length < MIN_VEHICLE_PHOTOS) throw ApiError.validation(TOO_FEW, { files: TOO_FEW })
+  if (next.length > MAX_VEHICLE_PHOTOS) throw ApiError.validation(`You can add up to ${MAX_VEHICLE_PHOTOS} vehicle images.`, { files: 'Too many images.' })
+  current.filter((p) => !next.includes(p)).forEach(removeStored)
+  v.photos = next
+  v.photo = next[0]
+  await v.save()
+  res.json({ success: true, vehicle: vehicleOut(v) })
 }
 
 export async function updateVehicle(req, res) {
@@ -32,16 +69,18 @@ export async function updateVehicle(req, res) {
 
 export async function deleteVehicle(req, res) {
   const v = await mine(req)
-  removeStored(v.photo)
+  vehiclePhotos(v).forEach(removeStored)
   await v.deleteOne()
   res.json({ success: true })
 }
 
-/** POST /api/vehicles/:id/photo (multipart "file") */
+/** POST /api/vehicles/:id/photo (multipart "file"): replaces the cover image (app 1.2.0 and older). */
 export async function uploadVehiclePhoto(req, res) {
   const v = await mine(req)
+  const rest = vehiclePhotos(v).filter((p) => p !== v.photo)
   removeStored(v.photo)
   v.photo = storedPath(req.file)
+  v.photos = [v.photo, ...rest]
   await v.save()
   res.json({ success: true, vehicle: vehicleOut(v) })
 }

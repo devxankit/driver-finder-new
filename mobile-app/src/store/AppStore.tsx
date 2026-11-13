@@ -38,7 +38,7 @@ export type DriverProfile = {
 
 export type OwnerProfile = { name: string; company: string; type: 'individual' | 'fleet'; city: string };
 
-export type Vehicle = { id: string; category: string; model: string; number: string; year: string; driver?: string; photo?: string | null };
+export type Vehicle = { id: string; category: string; model: string; number: string; year: string; driver?: string; photo?: string | null; photos?: string[] };
 
 export type Subscription = { id?: string; role: Role; planId: string; name: string; startedAt: number; expiresAt: number };
 
@@ -141,7 +141,8 @@ type Store = {
   uploadDoc: (key: string, file: { uri: string; type?: string }) => Promise<void>;
   submitKyc: () => Promise<void>;
   toggleSave: (jobId: string) => void;
-  apply: (jobId: string) => Promise<void>;
+  /** Applies to a job and returns the saved application (also added to `applications` right away). */
+  apply: (jobId: string) => Promise<{ id: string; status: AppStatus; at: number }>;
   answerRequest: (id: string, accept: boolean) => Promise<void>;
   addVehicle: (v: Omit<Vehicle, 'id'>) => Promise<void>;
   postJob: (j: Record<string, unknown>) => Promise<Job>;
@@ -438,8 +439,9 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
           .catch(() => refresh().catch(() => {}));
       },
       apply: async (jobId) => {
-        await api(`/jobs/${jobId}/apply`, { method: 'POST' });
-        api('/applications/mine').then((d) => setApplications(d.applications)).catch(() => {});
+        const d = await api<{ application: { id: string; status: AppStatus; at: number } }>(`/jobs/${jobId}/apply`, { method: 'POST' });
+        api('/applications/mine').then((x) => setApplications(x.applications)).catch(() => {});
+        return d.application;
       },
       answerRequest: async (id, accept) => {
         await api(`/requests/${id}`, { method: 'PATCH', body: { accept } });

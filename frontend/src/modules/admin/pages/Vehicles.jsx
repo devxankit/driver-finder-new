@@ -7,10 +7,17 @@ import { fileUrl } from '@/lib/api'
 import { CATEGORY_LABELS, date, phone } from '@/lib/format'
 import { PageHeader } from '../AdminLayout'
 
-function VehicleThumb({ src }) {
+function VehicleThumb({ src, count = 0 }) {
   const [failed, setFailed] = useState(false)
   return src && !failed ? (
-    <img src={src} alt="" onError={() => setFailed(true)} className="size-10 rounded-lg object-cover ring-1 ring-ink-200/60" />
+    <span className="relative shrink-0">
+      <img src={src} alt="" onError={() => setFailed(true)} className="size-10 rounded-lg object-cover ring-1 ring-ink-200/60" />
+      {count > 1 ? (
+        <span title={`${count} images`} className="absolute -right-1.5 -bottom-1.5 rounded-full bg-ink-900 px-1.5 text-[10px] font-semibold leading-4 text-white ring-2 ring-white">
+          {count}
+        </span>
+      ) : null}
+    </span>
   ) : (
     <div className="flex size-10 items-center justify-center rounded-lg bg-ink-100">
       <Truck className="size-4 text-ink-400" />
@@ -40,7 +47,7 @@ export default function Vehicles() {
               title: 'Registration',
               render: (v) => (
                 <div className="flex items-center gap-3">
-                  <VehicleThumb src={fileUrl(v.photo)} />
+                  <VehicleThumb src={fileUrl(v.photo)} count={v.photos?.length ?? 0} />
                   <span className="rounded-md border border-ink-300 bg-yellow-50 px-2 py-0.5 font-mono text-[12.5px] font-semibold tracking-wide text-ink shadow-[inset_0_-1px_0_rgb(0_0_0/0.06)]">{v.number}</span>
                 </div>
               ),

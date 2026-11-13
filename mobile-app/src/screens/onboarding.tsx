@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Image, ScrollView, StatusBar, View } from 'react-native';
+import { ActivityIndicator, Image, ScrollView, StatusBar, View } from 'react-native';
+import { Alert } from '../i18n/Alert';
 import Pressable from '../components/Pressable';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
@@ -8,7 +9,7 @@ import T from '../components/T';
 import { BackButton, BottomBar, Button, Chip, Field, Steps, KeyboardSafe } from '../components/ui';
 import { CategoryPick, DocMock, Logo } from '../components/brand';
 import { CategoryKey, colors, shadow } from '../theme';
-import { ANYWHERE, cat, categories, licenceTypes } from '../data/catalog';
+import { ANYWHERE, cat, categories, licenceTypes, MAX_CITIES_MSG, MAX_DRIVER_CITIES } from '../data/catalog';
 import { CityField, CityPicker } from '../components/CityPicker';
 import { fileSource } from '../api/client';
 import { choosePhoto, Picked, takePhoto } from '../utils/media';
@@ -17,7 +18,7 @@ import { DriverProfile, useStore } from '../store/AppStore';
 
 /* ------------------------------------------------------------ Driver setup */
 
-export function DriverSetupScreen({ navigation }: any) {
+export function DriverSetupScreen({ navigation, route }: any) {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const { driver, me, saveDriver, uploadPhoto, loadMeta } = useStore();
@@ -26,7 +27,8 @@ export function DriverSetupScreen({ navigation }: any) {
     // Fresh city / category lists from the admin before the user picks.
     loadMeta().catch(() => {});
   }, [loadMeta]);
-  const [step, setStep] = useState(0);
+  // `step` opens a later step directly, e.g. the cities step from the profile.
+  const [step, setStep] = useState<number>(route?.params?.step ?? 0);
   const [p, setP] = useState<DriverProfile>(
     driver ?? { name: me?.name ?? '', city: me?.city ?? '', categories: [], licence: [], experience: 0, payPref: 'monthly', expectedPay: '', fullTime: true, types: [], preferredLocations: [] },
   );
@@ -46,6 +48,7 @@ export function DriverSetupScreen({ navigation }: any) {
   const withTypes = p.categories.map((k) => cat(k)).filter((c) => c.types?.length && (c.key === 'bigtruck' || c.types.length <= 6));
   const typesOk = !p.categories.includes('bigtruck') || (p.types ?? []).some((x) => cat('bigtruck').types?.includes(x));
   const prefer = p.preferredLocations ?? [];
+  const citiesFull = prefer.filter((x) => x !== ANYWHERE).length >= MAX_DRIVER_CITIES;
   // Back on the first step returns to the role choice (setup is reached by a reset, so there is no history).
   const back = () => (step > 0 ? setStep(step - 1) : navigation.canGoBack() ? navigation.goBack() : navigation.reset({ index: 0, routes: [{ name: 'Role' }] }));
 
@@ -207,12 +210,17 @@ export function DriverSetupScreen({ navigation }: any) {
               <Chip label={t('setup.partTime')} selected={!p.fullTime} onPress={() => set({ fullTime: false })} />
             </View>
 
-            <T w="extrabold" size={20} style={{ marginTop: 10 }}>
-              Where do you want to drive?
-            </T>
+            <View style={{ marginTop: 10, gap: 2 }}>
+              <T w="extrabold" size={20}>
+                Where do you want to drive?
+              </T>
+              <T size={13} color={colors.muted}>
+                Select up to {MAX_DRIVER_CITIES} cities, or Anywhere in India.
+              </T>
+            </View>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               <Chip label={ANYWHERE} icon={<Globe size={14} color={colors.ink} />} selected={prefer.includes(ANYWHERE)} onPress={() => set({ preferredLocations: prefer.includes(ANYWHERE) ? [] : [ANYWHERE] })} />
-              {p.city && !prefer.includes(p.city) && !prefer.includes(ANYWHERE) ? (
+              {p.city && !prefer.includes(p.city) && !prefer.includes(ANYWHERE) && !citiesFull ? (
                 <Chip label={p.city} icon={<MapPin size={14} color={colors.ink} />} selected={false} onPress={() => set({ preferredLocations: [...prefer, p.city] })} />
               ) : null}
               {prefer
@@ -220,8 +228,13 @@ export function DriverSetupScreen({ navigation }: any) {
                 .map((x) => (
                   <Chip key={x} label={x} selected icon={<X size={14} color={colors.ink} />} onPress={() => set({ preferredLocations: prefer.filter((y) => y !== x) })} />
                 ))}
-              <Chip label="Add city" icon={<Plus size={14} color={colors.ink} />} selected={false} onPress={() => setPicker('prefer')} />
+              {!citiesFull ? <Chip label="Add city" icon={<Plus size={14} color={colors.ink} />} selected={false} onPress={() => setPicker('prefer')} /> : null}
             </View>
+            {citiesFull ? (
+              <T w="semibold" size={13} color={colors.ink2}>
+                {MAX_CITIES_MSG}
+              </T>
+            ) : null}
           </View>
         ) : null}
       </ScrollView>
@@ -234,6 +247,8 @@ export function DriverSetupScreen({ navigation }: any) {
         title="Where do you want to drive?"
         multiple
         extra={[ANYWHERE]}
+        max={MAX_DRIVER_CITIES}
+        maxMessage={MAX_CITIES_MSG}
         value={prefer}
         onClose={() => setPicker(null)}
         onChange={(v) => set({ preferredLocations: v })}

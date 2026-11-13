@@ -1,10 +1,11 @@
 import mongoose from 'mongoose'
 import Job from '../models/Job.js'
 import User from '../models/User.js'
-import { Application, Document, Vehicle } from '../models/index.js'
+import { Application, Connection, Document, Vehicle } from '../models/index.js'
 import { ApiError } from '../utils/ApiError.js'
 import { assertId, like, paging } from '../utils/helpers.js'
-import { assertCanConnect, assertKycApproved } from '../services/gate.service.js'
+import { activeSubscription, assertCanConnect, assertKycApproved } from '../services/gate.service.js'
+import { distanceKm, freshPoint } from '../services/geo.service.js'
 import { driverOut, jobOut } from '../services/serialize.js'
 import { notify } from '../services/notify.service.js'
 import { ensureConnection, notifyConnected } from '../services/connect.service.js'
@@ -55,7 +56,9 @@ export async function feed(req, res) {
   const { category, city, payType, q } = req.query
   const filter = { status: 'active' }
   if (category) filter.category = category
-  if (payType === 'monthly' || payType === 'trip') filter.payType = payType
+  if (payType === 'monthly') filter.payType = 'monthly'
+  // Per-trip work includes "both" jobs (monthly ones that also pay per trip).
+  if (payType === 'trip') filter.$and = [{ $or: [{ payType: 'trip' }, { tripPay: { $gt: 0 } }] }]
   if (city) filter.area = like(city)
   if (q) filter.$or = [{ title: like(q) }, { area: like(q) }, { vehicle: like(q) }, { route: like(q) }]
 
@@ -109,6 +112,8 @@ export async function myJobs(req, res) {
 export async function createJob(req, res) {
   assertKycApproved(req.user)
   const { vehicleId, ...data } = req.body
+  // Per-trip pay on top of the salary only makes sense for a monthly job.
+  if (data.payType !== 'monthly') delete data.tripPay
   if (vehicleId) {
     assertId(vehicleId, 'Vehicle')
     const v = await Vehicle.findOne({ _id: vehicleId, owner: req.user._id })
@@ -148,7 +153,14 @@ export async function apply(req, res) {
   const existing = await Application.findOne({ job: job._id, driver: req.user._id })
   if (existing) throw ApiError.conflict('You have already applied for this job.', 'ALREADY_APPLIED')
 
-  const app = await Application.create({ job: job._id, driver: req.user._id, owner: job.owner })
+  let app
+  try {
+    app = await Application.create({ job: job._id, driver: req.user._id, owner: job.owner })
+  } catch (e) {
+    // Two taps at the same moment: the unique index keeps one application.
+    if (e?.code === 11000) throw ApiError.conflict('You have already applied for this job.', 'ALREADY_APPLIED')
+    throw e
+  }
   await Job.updateOne({ _id: job._id }, { $inc: { applicants: 1 } })
   syncUsers(job.owner, ['jobs', 'links'])
   syncUsers(req.user._id, 'applications')
@@ -170,30 +182,43 @@ export async function myApplications(req, res) {
   })
 }
 
-/** GET /api/jobs/:id/applicants (owner) */
+/**
+ * GET /api/jobs/:id/applicants (owner). The phone shows once connected and the
+ * owner's plan is active. Per-trip jobs also give each driver's distance from
+ * the pickup point (or the owner's own location) and list the nearest first.
+ */
 export async function applicants(req, res) {
   assertId(req.params.id, 'Job')
   const job = await Job.findOne({ _id: req.params.id, owner: req.user._id }).lean()
   if (!job) throw ApiError.notFound('Job not found.')
   const apps = await Application.find({ job: job._id }).sort({ createdAt: -1 }).lean()
-  const drivers = await User.find({ _id: { $in: apps.map((a) => a.driver) }, deletedAt: null }).lean()
+  const driverIds = apps.map((a) => a.driver)
+  const [drivers, sub, conns] = await Promise.all([
+    User.find({ _id: { $in: driverIds }, deletedAt: null }).lean(),
+    activeSubscription(req.user),
+    Connection.find({ owner: req.user._id, driver: { $in: driverIds } }, { driver: 1 }).lean(),
+  ])
   const docs = await Document.find({ user: { $in: drivers.map((d) => d._id) } }).lean()
   const byId = Object.fromEntries(drivers.map((d) => [String(d._id), d]))
-  res.json({
-    success: true,
-    applicants: apps
-      .filter((a) => byId[String(a.driver)])
-      .map((a) => ({
-        id: String(a._id),
-        status: a.status,
-        at: a.createdAt.getTime(),
-        driver: driverOut(byId[String(a.driver)], {
-          phone: a.status === 'Connected',
-          docs: docs.filter((d) => String(d.user) === String(a.driver)),
-          link: a.status,
-        }),
-      })),
-  })
+  const connected = new Set(conns.map((c) => String(c.driver)))
+  const trip = job.payType === 'trip' || job.tripPay > 0
+  const pickup = trip ? (job.pickup?.lat != null && job.pickup?.lng != null ? job.pickup : freshPoint(req.user, Infinity)) : null
+  const list = apps
+    .filter((a) => byId[String(a.driver)])
+    .map((a) => ({
+      id: String(a._id),
+      status: a.status,
+      at: a.createdAt.getTime(),
+      driver: driverOut(byId[String(a.driver)], {
+        phone: Boolean(sub) && connected.has(String(a.driver)),
+        docs: docs.filter((d) => String(d.user) === String(a.driver)),
+        link: a.status,
+        distanceKm: pickup ? distanceKm(pickup, freshPoint(byId[String(a.driver)])) : null,
+      }),
+    }))
+  // Nearest first for trips; drivers without a known distance keep their order after them.
+  if (trip) list.sort((x, y) => (x.driver.distanceKm ?? Infinity) - (y.driver.distanceKm ?? Infinity))
+  res.json({ success: true, applicants: list, pickup: trip ? (job.pickup?.lat != null ? 'pickup' : pickup ? 'owner' : null) : null })
 }
 
 /** PATCH /api/applications/:id { status } (owner). Connecting needs the owner's KYC + plan. */

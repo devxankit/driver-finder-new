@@ -93,7 +93,10 @@ const vehicleSchema = new Schema(
     number: { type: String, required: true, trim: true, uppercase: true },
     year: { type: String, default: '' },
     driverName: { type: String, default: '' },
+    /** Cover image: always photos[0] (kept for the admin panel and older app versions). */
     photo: { type: String, default: null },
+    /** Stored paths of every vehicle image (front, side, back...). */
+    photos: { type: [String], default: undefined },
     status: { type: String, enum: ['active', 'hidden'], default: 'active' },
   },
   { timestamps: true }
@@ -291,6 +294,23 @@ const enquirySchema = new Schema(
   { timestamps: true }
 )
 export const Enquiry = mongoose.model('Enquiry', enquirySchema)
+
+/* ----------------------------------------------------------- Translations */
+
+/**
+ * Saved machine translations of user and database text (see
+ * translate.service.js). _id is sha1("lang\ntext"), so a lookup is one index hit.
+ */
+const translationSchema = new Schema(
+  {
+    _id: { type: String },
+    lang: { type: String, required: true },
+    text: { type: String, required: true },
+    out: { type: String, required: true },
+  },
+  { timestamps: true }
+)
+export const Translation = mongoose.model('Translation', translationSchema)
 
 /* -------------------------------------------------------------------- CMS */
 

@@ -76,7 +76,7 @@ export async function listVehicles(req, res) {
     Vehicle.find(filter).sort({ createdAt: -1 }).skip(p.skip).limit(p.limit).populate('owner', 'name phone owner role').lean(),
     Vehicle.countDocuments(filter),
   ])
-  res.json(page(items.map((v) => ({ id: String(v._id), category: v.category, model: v.model, number: v.number, year: v.year, driverName: v.driverName, photo: publicUrl(v.photo), status: v.status, owner: ref(v.owner), createdAt: v.createdAt })), total, p))
+  res.json(page(items.map((v) => ({ id: String(v._id), category: v.category, model: v.model, number: v.number, year: v.year, driverName: v.driverName, photo: publicUrl(v.photo), photos: (v.photos?.length ? v.photos : v.photo ? [v.photo] : []).map(publicUrl), status: v.status, owner: ref(v.owner), createdAt: v.createdAt })), total, p))
 }
 
 /* ------------------------------------------------------------ Connections */

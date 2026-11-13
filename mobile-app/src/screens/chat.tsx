@@ -22,6 +22,31 @@ import { useStore } from '../store/AppStore';
 import { api } from '../api/client';
 import { emitSocket, onSocket, onSocketStatus } from '../api/socket';
 import { clock, timeAgo } from '../utils/format';
+import { txInfo, useTx } from '../i18n/auto';
+
+/**
+ * A chat message. Your own messages show as you typed them; the other person's
+ * are shown in your language, with a link to see what they actually wrote.
+ */
+function MessageText({ text, mine }: { text: string; mine: boolean }) {
+  useTx();
+  const [original, setOriginal] = useState(false);
+  const tr = mine ? { text, translated: false } : txInfo(text);
+  return (
+    <>
+      <T raw size={15} lh={21}>
+        {original ? text : tr.text}
+      </T>
+      {tr.translated ? (
+        <Pressable onPress={() => setOriginal(!original)} hitSlop={8} accessibilityRole="button" style={{ alignSelf: 'flex-start', marginTop: 2 }}>
+          <T size={11} color={colors.muted} style={{ textDecorationLine: 'underline' }}>
+            {original ? 'Show translation' : 'Show original'}
+          </T>
+        </Pressable>
+      ) : null}
+    </>
+  );
+}
 
 type Msg = { id: string; from: 'me' | 'them'; text: string; at: number; pending?: boolean; failed?: boolean };
 
@@ -307,9 +332,7 @@ export function ChatThreadScreen({ navigation, route }: any) {
             const read = mine && !item.pending && otherReadAt >= item.at;
             return (
               <View style={{ alignSelf: mine ? 'flex-end' : 'flex-start', maxWidth: '80%', backgroundColor: mine ? colors.yellow : colors.white, borderRadius: 16, borderBottomRightRadius: mine ? 4 : 16, borderBottomLeftRadius: mine ? 16 : 4, paddingHorizontal: 14, paddingVertical: 10, borderWidth: mine ? 0 : 1, borderColor: colors.line }}>
-                <T size={15} lh={21}>
-                  {item.text}
-                </T>
+                <MessageText text={item.text} mine={mine} />
                 <View style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-end', gap: 4, marginTop: 3 }}>
                   <T size={10} color={mine ? colors.yellowText : colors.muted}>
                     {clock(item.at)}

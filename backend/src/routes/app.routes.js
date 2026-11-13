@@ -4,8 +4,8 @@
 import { Router } from 'express'
 import { validate } from '../middleware/validate.js'
 import { protect, requireRole } from '../middleware/auth.js'
-import { loginLimiter, otpLimiter } from '../middleware/rateLimiter.js'
-import { requireFile, uploadKycDoc as kycUpload, uploadPhoto, uploadVehiclePhoto as vehicleUpload } from '../middleware/upload.js'
+import { loginLimiter, otpLimiter, translateLimiter } from '../middleware/rateLimiter.js'
+import { discardOnError, requireFile, uploadKycDoc as kycUpload, uploadPhoto, uploadVehiclePhoto as vehicleUpload, uploadVehiclePhotos as vehiclePhotosUpload } from '../middleware/upload.js'
 import * as s from '../validation/schemas.js'
 import * as auth from '../controllers/auth.controller.js'
 import * as me from '../controllers/me.controller.js'
@@ -38,6 +38,8 @@ r.get('/me', me.getMe)
 r.patch('/me', validate(s.meSchema), me.updateMe)
 r.delete('/me', me.deleteMe)
 r.post('/me/role', validate(s.roleSchema), me.setRole)
+r.put('/me/location', validate(s.locationSchema), me.saveLocation)
+r.post('/translate', translateLimiter, validate(s.translateSchema), me.translateTexts)
 r.put('/me/driver', driver, validate(s.driverProfileSchema), me.saveDriverProfile)
 r.put('/me/owner', owner, validate(s.ownerProfileSchema), me.saveOwnerProfile)
 r.post('/me/photo', uploadPhoto, requireFile, me.uploadMyPhoto)
@@ -77,10 +79,11 @@ r.patch('/requests/:id', driver, validate(s.answerRequestSchema), drivers.answer
 
 /* Vehicles */
 r.get('/vehicles', owner, vehicles.listVehicles)
-r.post('/vehicles', owner, validate(s.vehicleSchema), vehicles.addVehicle)
+r.post('/vehicles', owner, discardOnError, vehiclePhotosUpload, validate(s.vehicleSchema), vehicles.addVehicle)
 r.patch('/vehicles/:id', owner, validate(s.vehicleSchema.partial()), vehicles.updateVehicle)
 r.delete('/vehicles/:id', owner, vehicles.deleteVehicle)
 r.post('/vehicles/:id/photo', owner, vehicleUpload, requireFile, vehicles.uploadVehiclePhoto)
+r.put('/vehicles/:id/photos', owner, discardOnError, vehiclePhotosUpload, vehicles.setVehiclePhotos)
 
 /* Chat */
 r.get('/connections', chat.listConnections)

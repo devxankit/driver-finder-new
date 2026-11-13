@@ -36,7 +36,7 @@ function copyImage(file, folder) {
 
 const CATEGORIES = [
   { key: 'truck', label: 'Truck', labels: { hi: 'ट्रक' }, color: '#C2410C', types: ['Open body', 'Container', 'Trailer', 'Tipper', 'Tanker'], img: 't-truck.jpg' },
-  { key: 'bigtruck', label: 'Big Truck', labels: { hi: 'बड़ा ट्रक' }, color: '#B45309', types: ['Bag truck', 'Bulker truck', 'Container truck'], img: 't-bigtruck.jpg' },
+  { key: 'bigtruck', label: 'Big Truck (HCV)', labels: { hi: 'बड़ा ट्रक (HCV)' }, color: '#B45309', types: ['Bag truck', 'Bulker truck', 'Container truck'], img: 't-bigtruck.jpg' },
   { key: 'tempo', label: 'Tempo', labels: { hi: 'टेम्पो' }, color: '#0A7DB8', types: ['Mini truck', 'Pickup', 'Tata Ace', 'Bolero pickup'], img: 't-tempo.jpg' },
   { key: 'bus', label: 'Bus', labels: { hi: 'बस' }, color: '#0E8A7C', types: ['School bus', 'Staff bus', 'Tourist bus', 'Sleeper'], img: 't-bus.jpg' },
   { key: 'minibus', label: 'Mini bus', labels: { hi: 'मिनी बस' }, color: '#0E8A7C', types: ['Tempo traveller', 'Staff van', 'School van'], img: 't-minibus.jpg' },

@@ -1,5 +1,6 @@
 import React from 'react';
-import { Alert, Linking, View } from 'react-native';
+import { Linking, View } from 'react-native';
+import { Alert } from '../i18n/Alert';
 import Pressable from './Pressable';
 import { useTranslation } from 'react-i18next';
 import { Check, Clock, Crown, MessageSquare, Phone } from 'lucide-react-native';

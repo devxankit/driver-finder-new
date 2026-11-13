@@ -8,6 +8,8 @@ import { meOut, notificationOut, planOut } from '../services/serialize.js'
 import { publicUrl, removeStored, storedPath } from '../middleware/upload.js'
 import { env } from '../config/env.js'
 import { syncAdmins } from '../services/realtime.js'
+import { geoJson } from '../services/geo.service.js'
+import { translateMany } from '../services/translate.service.js'
 
 /** The full /me payload: profile, KYC docs and current plan. */
 export async function loadMe(user) {
@@ -26,6 +28,21 @@ export async function updateMe(req, res) {
   if (prefs) req.user.prefs = { ...req.user.prefs.toObject?.() ?? req.user.prefs, ...prefs }
   await req.user.save()
   res.json({ success: true, user: await loadMe(req.user) })
+}
+
+/**
+ * POST /api/translate { to, texts[] } -> { translations[] }: each text in the
+ * language `to`, or null when it could not be translated right now (the app
+ * then shows the original and asks again later).
+ */
+export async function translateTexts(req, res) {
+  res.json({ success: true, translations: await translateMany(req.body.texts, req.body.to) })
+}
+
+/** PUT /api/me/location { lat, lng }: the device's current location (both roles). */
+export async function saveLocation(req, res) {
+  await User.updateOne({ _id: req.user._id }, { geo: geoJson(req.body), geoAt: new Date() })
+  res.json({ success: true })
 }
 
 /** POST /api/me/role { role }. The role is chosen once; changing it later goes through support. */

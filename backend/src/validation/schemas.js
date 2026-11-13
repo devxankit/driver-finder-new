@@ -18,6 +18,11 @@ export const meSchema = z.object({
   prefs: z.object({ jobs: z.boolean().optional(), chats: z.boolean().optional(), whatsapp: z.boolean().optional() }).optional(),
 })
 
+export const locationSchema = z.object({
+  lat: z.coerce.number().min(-90).max(90),
+  lng: z.coerce.number().min(-180).max(180),
+})
+
 export const roleSchema = z.object({ role: z.enum(['driver', 'owner']) })
 
 export const driverProfileSchema = z.object({
@@ -33,7 +38,7 @@ export const driverProfileSchema = z.object({
   languages: str(120).optional(),
   about: str(300).optional(),
   types: z.array(str(40)).max(20).default([]),
-  preferredLocations: z.array(str(80)).max(15).default([]),
+  preferredLocations: z.array(str(80)).max(5, 'You can select a maximum of 5 cities.').default([]),
 })
 
 export const ownerProfileSchema = z.object({
@@ -60,6 +65,9 @@ export const jobSchema = z.object({
   title: req('Enter a job title.', 120),
   payType: z.enum(['monthly', 'trip']),
   pay: z.coerce.number().int().min(1, 'Enter the pay.').max(10000000),
+  // "Both": per-trip pay offered on top of the monthly salary.
+  tripPay: z.coerce.number().int().min(1, 'Enter the pay per trip.').max(10000000).optional(),
+  dailyBhatta: z.coerce.number().int().min(0).max(100000, 'Daily bhatta looks too high.').optional(),
   allowance: str(120).default(''),
   area: req('Enter the area or city.', 80),
   route: str(120).default(''),
@@ -68,10 +76,11 @@ export const jobSchema = z.object({
   experience: str(40).default(''),
   stay: str(80).default(''),
   start: str(40).default(''),
-  // Truck jobs: idle allowance (bhatta), diesel mileage and bonus.
+  // Idle allowance (trucks), diesel mileage offered (km/litre) and bonus / other benefits.
   idleAllowance: z.object({ amount: z.coerce.number().min(0).max(100000), afterHours: z.coerce.number().min(0).max(720) }).optional(),
-  mileage: z.coerce.number().min(0).max(50).optional(),
+  mileage: z.coerce.number().min(0).max(50, 'Mileage must be 50 km/litre or less.').optional(),
   bonus: z.object({ amount: z.coerce.number().min(0).max(1000000), details: str(200).default('') }).optional(),
+  pickup: z.object({ lat: z.coerce.number().min(-90).max(90), lng: z.coerce.number().min(-180).max(180) }).optional(),
 })
 
 export const jobUpdateSchema = jobSchema.partial().extend({ status: z.enum(['active', 'paused', 'closed']).optional() })
@@ -87,6 +96,11 @@ export const hireRequestSchema = z.object({
 export const answerRequestSchema = z.object({ accept: z.boolean() })
 
 export const messageSchema = z.object({ text: req('Type a message.', 2000) })
+
+export const translateSchema = z.object({
+  to: z.enum(['en', 'hi', 'mr', 'gu', 'bn', 'pa', 'ta', 'te', 'kn']),
+  texts: z.array(z.string().max(2000)).min(1).max(60),
+})
 
 export const orderSchema = z.object({ planId: req('Choose a plan.', 40) })
 

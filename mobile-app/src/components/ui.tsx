@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft, BadgeCheck, Check, ChevronRight } from 'lucide-react-native';
 import T from './T';
+import { useTx } from '../i18n/auto';
 import { category, CategoryKey, colors, font, neutralCategory, radius, shadow } from '../theme';
 
 /* ------------------------------------------------------------------ Button */
@@ -71,7 +72,7 @@ export function Button({
       ) : (
         <>
           {icon}
-          <T w={variant === 'primary' ? 'extrabold' : 'bold'} size={size === 'lg' ? 17 : size === 'md' ? 15 : 13} color={disabled ? colors.muted : v.fg}>
+          <T w={variant === 'primary' ? 'extrabold' : 'bold'} size={size === 'lg' ? 17 : size === 'md' ? 15 : 13} color={disabled ? colors.muted : v.fg} numberOfLines={1} style={{ flexShrink: 1 }}>
             {title}
           </T>
           {iconRight}
@@ -361,21 +362,27 @@ const TAG: Record<'monthly' | 'trip' | 'neutral' | 'green' | 'red' | 'yellow', {
   red: { bg: colors.redSoft, fg: colors.redText },
 };
 
-export function Tag({ label, tone = 'neutral', style }: { label: string; tone?: TagTone; style?: StyleProp<ViewStyle> }) {
+export function Tag({ label, tone = 'neutral', style, check }: { label: string; tone?: TagTone; style?: StyleProp<ViewStyle>; check?: boolean }) {
   const cc = category[tone] ?? neutralCategory;
   const c = tone in TAG ? TAG[tone as keyof typeof TAG] : { bg: cc.bg, fg: cc.text };
   return (
-    <View style={[{ alignSelf: 'flex-start', height: 26, paddingHorizontal: 9, borderRadius: 8, backgroundColor: c.bg, justifyContent: 'center' }, style]}>
-      <T w="bold" size={12} color={c.fg}>
+    <View style={[{ alignSelf: 'flex-start', maxWidth: '100%', flexShrink: 1, height: 26, paddingHorizontal: 9, borderRadius: 8, backgroundColor: c.bg, flexDirection: 'row', alignItems: 'center', gap: 4 }, style]}>
+      {check ? <Check size={13} color={c.fg} strokeWidth={3} /> : null}
+      <T w="bold" size={12} color={c.fg} numberOfLines={1} style={{ flexShrink: 1 }}>
         {label}
       </T>
     </View>
   );
 }
 
-export function StatusTag({ status }: { status: string }) {
+/**
+ * Status chip. `status` is the English status (it picks the colour); `label`
+ * is what to show, e.g. the translated status.
+ */
+export function StatusTag({ status, label, style }: { status: string; label?: string; style?: StyleProp<ViewStyle> }) {
+  const done = status === 'Applied' || status === 'Connected' || status === 'Hired';
   const tone: TagTone =
-    status === 'Connected' || status === 'Hired' || status === 'Approved' || status === 'Verified'
+    status === 'Applied' || status === 'Connected' || status === 'Hired' || status === 'Approved' || status === 'Verified'
       ? 'green'
       : status === 'Shortlisted'
         ? 'yellow'
@@ -384,7 +391,8 @@ export function StatusTag({ status }: { status: string }) {
           : status === 'Request sent' || status === 'Pending'
             ? 'trip'
             : 'neutral';
-  return <Tag label={status} tone={tone} />;
+  // Beside a name in a row: never more than half the row, so the name stays readable.
+  return <Tag label={label ?? status} tone={tone} check={done} style={[{ maxWidth: '55%' }, style]} />;
 }
 
 export function Verified({ size = 16 }: { size?: number }) {
@@ -429,6 +437,7 @@ export function Field({
   maxLength,
   autoFocus,
   multiline,
+  error,
 }: {
   label?: string;
   value: string;
@@ -440,9 +449,12 @@ export function Field({
   maxLength?: number;
   autoFocus?: boolean;
   multiline?: boolean;
+  /** Validation message shown under the field (red border while set). */
+  error?: string | null;
 }) {
   const [focus, setFocus] = React.useState(false);
   const input = React.useRef<React.ComponentRef<typeof TextInput>>(null);
+  const tr = useTx();
   useFocusAfterTransition(input, !!autoFocus);
   return (
     <View style={{ gap: 6 }}>
@@ -456,7 +468,7 @@ export function Field({
           minHeight: 56,
           borderRadius: 14,
           borderWidth: 1.5,
-          borderColor: focus ? colors.ink : colors.line,
+          borderColor: error ? colors.red : focus ? colors.ink : colors.line,
           backgroundColor: colors.white,
           flexDirection: 'row',
           alignItems: multiline ? 'flex-start' : 'center',
@@ -472,7 +484,7 @@ export function Field({
           ref={input}
           value={value}
           onChangeText={onChangeText}
-          placeholder={placeholder}
+          placeholder={placeholder ? tr(placeholder) : undefined}
           placeholderTextColor={colors.faint}
           keyboardType={keyboardType}
           maxLength={maxLength}
@@ -487,7 +499,17 @@ export function Field({
           </T>
         ) : null}
       </View>
+      {error ? <FieldError text={error} /> : null}
     </View>
+  );
+}
+
+/** Red validation line under a form field or picker. */
+export function FieldError({ text }: { text: string }) {
+  return (
+    <T w="semibold" size={13} color={colors.redText} accessibilityRole="alert">
+      {text}
+    </T>
   );
 }
 

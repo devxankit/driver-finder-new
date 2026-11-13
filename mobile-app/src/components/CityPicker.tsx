@@ -4,7 +4,8 @@
  * appears in everyone's list from then on.
  */
 import React, { useMemo, useState } from 'react';
-import { Alert, FlatList, Modal, TextInput, View } from 'react-native';
+import { FlatList, Modal, TextInput, View } from 'react-native';
+import { Alert } from '../i18n/Alert';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Check, MapPin, Plus, Search, X } from 'lucide-react-native';
 import Pressable from './Pressable';
@@ -13,6 +14,7 @@ import { Button, KeyboardSafe } from './ui';
 import { colors, font } from '../theme';
 import { cities } from '../data/catalog';
 import { api } from '../api/client';
+import { useTx } from '../i18n/auto';
 
 type Props = {
   visible: boolean;
@@ -22,17 +24,24 @@ type Props = {
   multiple?: boolean;
   /** Extra options shown on top, e.g. "Anywhere in India". */
   extra?: string[];
+  /** Multiple mode: most items that can be chosen; others are dimmed once reached. */
+  max?: number;
+  /** Shown when the maximum is reached. */
+  maxMessage?: string;
   onClose: () => void;
   onChange: (value: string[]) => void;
 };
 
-export function CityPicker({ visible, title, value, multiple, extra = [], onClose, onChange }: Props) {
+export function CityPicker({ visible, title, value, multiple, extra = [], max, maxMessage, onClose, onChange }: Props) {
   const insets = useSafeAreaInsets();
   const [q, setQ] = useState('');
   const [other, setOther] = useState(false);
   const [newCity, setNewCity] = useState('');
   const [saving, setSaving] = useState(false);
   const [picked, setPicked] = useState<string[]>(value);
+  const tr = useTx();
+  const full = !!multiple && !!max && picked.length >= max;
+  const limitText = maxMessage ?? `You can select up to ${max}.`;
 
   React.useEffect(() => {
     if (visible) {
@@ -48,8 +57,9 @@ export function CityPicker({ visible, title, value, multiple, extra = [], onClos
     const all = [...extra, ...cities];
     if (!s) return all;
     // Starts-with first, then contains.
-    const starts = all.filter((c) => c.toLowerCase().startsWith(s));
-    const contains = all.filter((c) => !c.toLowerCase().startsWith(s) && c.toLowerCase().includes(s));
+    // Match the English name or the name in the user's language.
+    const starts = all.filter((c) => c.toLowerCase().startsWith(s) || tr(c).toLowerCase().startsWith(s));
+    const contains = all.filter((c) => !starts.includes(c) && (c.toLowerCase().includes(s) || tr(c).toLowerCase().includes(s)));
     return [...starts, ...contains];
   }, [q, extra, visible]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -60,10 +70,15 @@ export function CityPicker({ visible, title, value, multiple, extra = [], onClos
       return;
     }
     // "Anywhere" excludes specific cities and the other way round.
+    const base = picked.filter((x) => !extra.includes(x));
+    if (max && !extra.includes(c) && !base.includes(c) && base.length >= max) {
+      Alert.alert(title, limitText);
+      return;
+    }
     setPicked((p) => {
       if (extra.includes(c)) return p.includes(c) ? [] : [c];
-      const base = p.filter((x) => !extra.includes(x));
-      return base.includes(c) ? base.filter((x) => x !== c) : [...base, c];
+      const b = p.filter((x) => !extra.includes(x));
+      return b.includes(c) ? b.filter((x) => x !== c) : [...b, c];
     });
   };
 
@@ -104,7 +119,7 @@ export function CityPicker({ visible, title, value, multiple, extra = [], onClos
             <TextInput
               value={q}
               onChangeText={setQ}
-              placeholder="Search city"
+              placeholder={tr('Search city')}
               placeholderTextColor={colors.faint}
               autoCorrect={false}
               style={{ flex: 1, fontFamily: font.medium, fontSize: 16, color: colors.ink, paddingVertical: 0 }}
@@ -131,7 +146,7 @@ export function CityPicker({ visible, title, value, multiple, extra = [], onClos
                 <TextInput
                   value={newCity}
                   onChangeText={setNewCity}
-                  placeholder="e.g. Sangamner"
+                  placeholder={tr('e.g. Sangamner')}
                   placeholderTextColor={colors.faint}
                   autoFocus
                   style={{ height: 50, borderRadius: 12, borderWidth: 1, borderColor: colors.lineStrong, paddingHorizontal: 12, fontFamily: font.medium, fontSize: 16, color: colors.ink }}
@@ -145,6 +160,7 @@ export function CityPicker({ visible, title, value, multiple, extra = [], onClos
             ) : (
               <Pressable
                 onPress={() => {
+                  if (full) return Alert.alert(title, limitText);
                   setOther(true);
                   setNewCity(q.trim());
                 }}
@@ -163,12 +179,14 @@ export function CityPicker({ visible, title, value, multiple, extra = [], onClos
           }
           renderItem={({ item: c }) => {
             const on = picked.includes(c);
+            // At the limit, cities not yet chosen are dimmed (tapping one explains why).
+            const locked = full && !on && !extra.includes(c);
             return (
               <Pressable
                 onPress={() => choose(c)}
                 accessibilityRole={multiple ? 'checkbox' : 'radio'}
-                accessibilityState={{ checked: on }}
-                style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 18, height: 56, backgroundColor: pressed ? colors.surface2 : on ? colors.yellow50 : colors.white, borderBottomWidth: 1, borderBottomColor: colors.surface2 })}>
+                accessibilityState={{ checked: on, disabled: locked }}
+                style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 18, height: 56, opacity: locked ? 0.4 : 1, backgroundColor: pressed ? colors.surface2 : on ? colors.yellow50 : colors.white, borderBottomWidth: 1, borderBottomColor: colors.surface2 })}>
                 <MapPin size={18} color={extra.includes(c) ? colors.ink : colors.muted} />
                 <T w={on ? 'extrabold' : 'semibold'} size={16} style={{ flex: 1 }}>
                   {c}
@@ -180,9 +198,17 @@ export function CityPicker({ visible, title, value, multiple, extra = [], onClos
         />
 
         {multiple ? (
-          <View style={{ padding: 16, paddingBottom: Math.max(insets.bottom, 12) + 4, backgroundColor: colors.white, borderTopWidth: 1, borderTopColor: colors.line }}>
+          <View style={{ padding: 16, paddingBottom: Math.max(insets.bottom, 12) + 4, backgroundColor: colors.white, borderTopWidth: 1, borderTopColor: colors.line, gap: 10 }}>
+            {full ? (
+              <View accessibilityRole="alert" style={{ flexDirection: 'row', alignItems: 'center', gap: 8, padding: 10, borderRadius: 12, backgroundColor: colors.yellow50 }}>
+                <Check size={16} color={colors.ink} strokeWidth={3} />
+                <T w="semibold" size={13} style={{ flex: 1 }}>
+                  {limitText}
+                </T>
+              </View>
+            ) : null}
             <Button
-              title={picked.length ? `Done · ${picked.length} selected` : 'Done'}
+              title={picked.length ? `Done · ${picked.length}${max ? ` of ${max}` : ''} selected` : 'Done'}
               disabled={!picked.length}
               onPress={() => {
                 onChange(picked);

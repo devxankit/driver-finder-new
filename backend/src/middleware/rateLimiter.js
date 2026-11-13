@@ -28,3 +28,12 @@ export const loginLimiter = rateLimit({
   legacyHeaders: false,
   message: json('Too many login attempts. Please try again after some time.'),
 })
+
+/** Translation batches: a busy screen sends a few; this only stops scripted abuse of the translator. */
+export const translateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 90,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  message: json('Too many translation requests. Please slow down.'),
+})

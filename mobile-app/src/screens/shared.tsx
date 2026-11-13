@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, KeyboardAvoidingView, Linking, Modal, RefreshControl, ScrollView, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, KeyboardAvoidingView, Linking, Modal, RefreshControl, ScrollView, TextInput, View } from 'react-native';
+import { Alert } from '../i18n/Alert';
 import { RazorpayResult, RazorpaySheet } from '../components/razorpay';
 import Pressable from '../components/Pressable';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

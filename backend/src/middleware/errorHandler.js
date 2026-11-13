@@ -24,7 +24,9 @@ export function errorHandler(err, req, res, next) {
     message =
       err.code === 'LIMIT_FILE_SIZE'
         ? `File is too large. Maximum size is ${Math.round(env.upload.maxFileSizeBytes / (1024 * 1024))} MB.`
-        : 'That file could not be accepted.'
+        : err.code === 'LIMIT_FILE_COUNT' || err.code === 'LIMIT_UNEXPECTED_FILE'
+          ? 'Too many files in one upload.'
+          : 'That file could not be accepted.'
   } else if (err.name === 'ValidationError') {
     statusCode = 422
     code = 'VALIDATION_FAILED'
