@@ -7,11 +7,11 @@
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-/** Live API on Render. For local testing, long-press the logo on the phone-number screen. */
-export const DEFAULT_API_URL = 'https://driver-finder-api.onrender.com';
+/** Live API on the VPS. For local testing, long-press the logo on the phone-number screen. */
+export const DEFAULT_API_URL = 'https://grtchalakbridging.com';
 
-// v2: ignore addresses saved by earlier test builds (e.g. http://localhost:5000).
-const URL_KEY = 'driverfinder.apiUrl.v2';
+// v3: ignore addresses saved by earlier builds (localhost, the old Render server).
+const URL_KEY = 'driverfinder.apiUrl.v3';
 const TOKEN_KEY = 'driverfinder.token';
 
 let baseUrl = DEFAULT_API_URL;

@@ -42,6 +42,13 @@ export const env = {
 
   trustProxy: toInt(process.env.TRUST_PROXY, 0),
 
+  /**
+   * The built website (landing page + admin panel, frontend/dist). When set,
+   * this server also serves it, so one domain carries the site, /api,
+   * /uploads and /socket.io (the VPS). Empty: API only.
+   */
+  webDist: process.env.WEB_DIST || '',
+
   otp: {
     /**
      * true: a real SMS is sent through SMS India Hub.

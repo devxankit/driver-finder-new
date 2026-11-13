@@ -1440,8 +1440,8 @@ export function OwnerProfileTab({ navigation }: any) {
           <ListRow icon={<FileText size={19} color={colors.ink} />} title="Terms and privacy" onPress={() => navigation.navigate('Legal')} />
           <ListRow icon={<LogOut size={19} color={colors.redText} />} title="Log out" danger onPress={confirmLogout} last />
         </Section>
-        <T size={12} color={colors.muted} center style={{ marginTop: 16 }}>
-          Driver Finder 1.3.0
+        <T raw size={12} color={colors.muted} center style={{ marginTop: 16 }}>
+          Driver Finder 1.3.1
         </T>
       </ScrollView>
     </View>
