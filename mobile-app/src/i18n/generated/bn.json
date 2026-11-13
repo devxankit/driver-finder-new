@@ -1255,6 +1255,8 @@
   "Vehicle not found": "যানবাহন পাওয়া যায়নি",
   "Vehicle not found.": "যানবাহন পাওয়া যায়নি।",
   "vehicle owner": "গাড়ির মালিক",
+  "Vehicle photo": "গাড়ির ছবি",
+  "Vehicle photo {0} of {1}": "{1} এর মধ্যে {0}টি গাড়ির ছবি",
   "Vehicle type": "যানবাহনের ধরন",
   "vehicle-{0}.jpg": "যানবাহন-{0}.jpg",
   "Vehicles": "যানবাহন",

@@ -156,6 +156,8 @@ export type Job = {
   mileage?: number | null;
   bonus?: { amount: number; details: string } | null;
   status?: 'active' | 'paused' | 'closed' | 'hidden';
+  /** The owner's photos of the vehicle (first is the cover); empty when there are none. */
+  photos?: string[];
   applicants: number;
   postedAt: number;
   application?: { id: string; status: AppStatus; at: number } | null;

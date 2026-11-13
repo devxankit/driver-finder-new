@@ -1255,6 +1255,8 @@
   "Vehicle not found": "வாகனம் கிடைக்கவில்லை",
   "Vehicle not found.": "வாகனம் கிடைக்கவில்லை.",
   "vehicle owner": "வாகன உரிமையாளர்",
+  "Vehicle photo": "வாகன புகைப்படம்",
+  "Vehicle photo {0} of {1}": "வாகனத்தின் புகைப்படம் {0} / {1}",
   "Vehicle type": "வாகன வகை",
   "vehicle-{0}.jpg": "வாகனம்-{0}.jpg",
   "Vehicles": "வாகனங்கள்",

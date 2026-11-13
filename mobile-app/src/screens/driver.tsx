@@ -11,6 +11,7 @@ import {
 import T from '../components/T';
 import { BackButton, BottomBar, Button, Card, Chip, EmptyState, IconButton, InfoTile, ListRow, Section, SectionHeader, StatusTag, Tag } from '../components/ui';
 import { CategoryRow, JobCard, JobRow, PersonPhoto } from '../components/brand';
+import { VehicleGallery } from '../components/Gallery';
 import { ContactRow, KycSheet, PaywallSheet } from '../components/sheets';
 import { CategoryKey, colors } from '../theme';
 import { ANYWHERE, cat, catLabel, hoursAgo, isTruck, Job, MAX_DRIVER_CITIES, payParts } from '../data/catalog';
@@ -434,8 +435,8 @@ export function JobDetailScreen({ navigation, route }: any) {
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <StatusBar barStyle="dark-content" />
       <ScrollView contentContainerStyle={{ paddingBottom: 20 }} showsVerticalScrollIndicator={false}>
-        <View style={{ height: 270 + insets.top, backgroundColor: colors.white, paddingTop: insets.top }}>
-          <Image source={c.photo} style={{ width: '100%', height: '100%' }} resizeMode="contain" />
+        <View style={{ height: 270 + insets.top, backgroundColor: j.photos?.length ? colors.surface2 : colors.white, paddingTop: j.photos?.length ? 0 : insets.top }}>
+          <VehicleGallery photos={j.photos} k={j.category} height={270 + insets.top} />
           <View style={{ position: 'absolute', top: insets.top + 12, left: 16, right: 16, flexDirection: 'row', justifyContent: 'space-between' }}>
             <BackButton light onPress={() => navigation.goBack()} />
             <View style={{ flexDirection: 'row', gap: 8 }}>

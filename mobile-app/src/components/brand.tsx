@@ -1,8 +1,8 @@
 import React from 'react';
-import { Image, ScrollView, StyleProp, View, ViewStyle } from 'react-native';
+import { Image, ImageStyle, ScrollView, StyleProp, View, ViewStyle } from 'react-native';
 import Pressable from './Pressable';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
-import { BadgeCheck, Bookmark, BookmarkCheck } from 'lucide-react-native';
+import { BadgeCheck, Bookmark, BookmarkCheck, Camera } from 'lucide-react-native';
 import T from './T';
 import { Tag } from './ui';
 import { category, CategoryKey, colors } from '../theme';
@@ -183,6 +183,28 @@ export function CategoryPick({ k, on, onPress }: { k: CategoryKey; on: boolean; 
 
 /* --------------------------------------------------------------- Job cards */
 
+/**
+ * The owner's photo of the vehicle, or the stock picture of its type when there
+ * is none or it fails to load (uploads can disappear on the free server).
+ */
+export function VehicleImage({ uri, k, style, count = 0 }: { uri?: string | null; k: CategoryKey; style?: StyleProp<ImageStyle>; count?: number }) {
+  const [failed, setFailed] = React.useState(false);
+  const src = !failed ? fileSource(uri ?? null) : null;
+  return (
+    <>
+      <Image source={src ?? cat(k).photo} onError={() => setFailed(true)} style={[{ width: '100%', height: '100%' }, style]} resizeMode={src ? 'cover' : 'contain'} />
+      {src && count > 1 ? (
+        <View style={{ position: 'absolute', right: 8, bottom: 8, flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, height: 24, borderRadius: 12, backgroundColor: 'rgba(17,17,17,0.72)' }}>
+          <Camera size={12} color={colors.white} />
+          <T raw w="bold" size={12} color={colors.white}>
+            {String(count)}
+          </T>
+        </View>
+      ) : null}
+    </>
+  );
+}
+
 export function PayTag({ type, both, labels }: { type: 'monthly' | 'trip'; both?: boolean; labels: { monthly: string; trip: string } }) {
   return <Tag label={both ? `${labels.monthly} + ${labels.trip}` : type === 'monthly' ? labels.monthly : labels.trip} tone={type === 'monthly' ? 'monthly' : 'trip'} />;
 }
@@ -212,7 +234,7 @@ export function JobCard({
       android_ripple={{ color: 'rgba(17,17,17,0.10)' }}
       style={({ pressed }) => ({ borderRadius: 18, overflow: 'hidden', backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line, opacity: pressed ? 0.92 : 1 })}>
       <View style={{ height: 150, backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.surface2 }}>
-        <Image source={c.photo} style={{ width: '100%', height: '100%' }} resizeMode="contain" />
+        <VehicleImage uri={job.photos?.[0]} k={job.category} count={job.photos?.length ?? 0} />
         <Tag label={`${c.label} · ${job.vehicle}`} tone={job.category} style={{ position: 'absolute', left: 10, top: 10 }} />
         {onSave ? (
           <Pressable
@@ -276,7 +298,7 @@ export function JobRow({ job, onPress, right, sub }: { job: Job; onPress: () => 
       accessibilityRole="button"
       style={({ pressed }) => ({ flexDirection: 'row', gap: 12, padding: 10, borderRadius: 18, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line, opacity: pressed ? 0.9 : 1 })}>
       <View style={{ width: 96, height: 76, borderRadius: 12, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.surface2, overflow: 'hidden' }}>
-        <Image source={c.photo} style={{ width: '100%', height: '100%' }} resizeMode="contain" />
+        <VehicleImage uri={job.photos?.[0]} k={job.category} />
       </View>
       <View style={{ flex: 1, gap: 3, justifyContent: 'center' }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>

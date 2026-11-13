@@ -1255,6 +1255,8 @@
   "Vehicle not found": "వాహనం దొరకలేదు",
   "Vehicle not found.": "వాహనం దొరకలేదు.",
   "vehicle owner": "వాహన యజమాని",
+  "Vehicle photo": "వాహనం ఫోటో",
+  "Vehicle photo {0} of {1}": "వాహనం ఫోటో {1}లో {0}",
   "Vehicle type": "వాహనం రకం",
   "vehicle-{0}.jpg": "వాహనం-{0}.jpg",
   "Vehicles": "వాహనాలు",

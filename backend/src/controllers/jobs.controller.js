@@ -6,7 +6,7 @@ import { ApiError } from '../utils/ApiError.js'
 import { assertId, like, paging } from '../utils/helpers.js'
 import { activeSubscription, assertCanConnect, assertKycApproved } from '../services/gate.service.js'
 import { distanceKm, freshPoint } from '../services/geo.service.js'
-import { driverOut, jobOut } from '../services/serialize.js'
+import { driverOut, jobOut, vehiclePhotos } from '../services/serialize.js'
 import { notify } from '../services/notify.service.js'
 import { ensureConnection, notifyConnected } from '../services/connect.service.js'
 import { syncAdmins, syncUsers } from '../services/realtime.js'
@@ -33,11 +33,32 @@ async function ownersFor(jobs) {
   }
 }
 
+/**
+ * The owner's photos of each job's vehicle: by the vehicle the job was posted
+ * for, or (older jobs) by the owner's vehicle with the same number.
+ */
+async function photosFor(jobs) {
+  const ids = jobs.map((j) => j.vehicleRef).filter(Boolean)
+  const numbers = jobs.filter((j) => !j.vehicleRef && j.vehicleNo).map((j) => j.vehicleNo.toUpperCase())
+  if (!ids.length && !numbers.length) return () => []
+  const list = await Vehicle.find(
+    { $or: [...(ids.length ? [{ _id: { $in: ids } }] : []), ...(numbers.length ? [{ owner: { $in: jobs.map((j) => j.owner) }, number: { $in: numbers } }] : [])] },
+    { owner: 1, number: 1, photo: 1, photos: 1 }
+  ).lean()
+  const byId = new Map(list.map((v) => [String(v._id), v]))
+  const byNumber = new Map(list.map((v) => [`${v.owner}|${v.number}`, v]))
+  return (j) => {
+    const v = j.vehicleRef ? byId.get(String(j.vehicleRef)) : byNumber.get(`${j.owner}|${(j.vehicleNo || '').toUpperCase()}`)
+    return v ? vehiclePhotos(v) : []
+  }
+}
+
 async function present(jobs, user) {
-  // Owners and the driver's own applications are independent: fetch them together.
-  const [{ owner, vehicles }, apps] = await Promise.all([
+  // Owners, vehicle photos and the driver's own applications are independent: fetch them together.
+  const [{ owner, vehicles }, apps, photos] = await Promise.all([
     ownersFor(jobs),
     user?.role === 'driver' ? Application.find({ driver: user._id, job: { $in: jobs.map((j) => j._id) } }).lean() : [],
+    photosFor(jobs),
   ])
   const appBy = Object.fromEntries(apps.map((a) => [String(a.job), a]))
   const saved = new Set((user?.saved ?? []).map(String))
@@ -47,6 +68,7 @@ async function present(jobs, user) {
       ownerVehicles: vehicles[String(j.owner)] ?? 0,
       application: appBy[String(j._id)],
       saved: saved.has(String(j._id)),
+      photos: photos(j),
     })
   )
 }

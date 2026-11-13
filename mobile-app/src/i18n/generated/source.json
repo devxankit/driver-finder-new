@@ -678,6 +678,8 @@
  "Vehicle not found",
  "Vehicle not found.",
  "vehicle owner",
+ "Vehicle photo",
+ "Vehicle photo {0} of {1}",
  "Vehicle type",
  "vehicle-{0}.jpg",
  "Vehicles",

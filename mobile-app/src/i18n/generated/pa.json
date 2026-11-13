@@ -1255,6 +1255,8 @@
   "Vehicle not found": "ਵਾਹਨ ਨਹੀਂ ਮਿਲਿਆ",
   "Vehicle not found.": "ਵਾਹਨ ਨਹੀਂ ਮਿਲਿਆ।",
   "vehicle owner": "ਵਾਹਨ ਮਾਲਕ",
+  "Vehicle photo": "ਵਾਹਨ ਦੀ ਫੋਟੋ",
+  "Vehicle photo {0} of {1}": "{1} ਵਿੱਚੋਂ {0} ਵਾਹਨ ਦੀ ਫ਼ੋਟੋ",
   "Vehicle type": "ਵਾਹਨ ਦੀ ਕਿਸਮ",
   "vehicle-{0}.jpg": "ਵਾਹਨ-{0}.jpg",
   "Vehicles": "ਵਾਹਨ",

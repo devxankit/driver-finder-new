@@ -1255,6 +1255,8 @@
   "Vehicle not found": "वाहन सापडले नाही",
   "Vehicle not found.": "वाहन सापडले नाही.",
   "vehicle owner": "वाहन मालक",
+  "Vehicle photo": "वाहनाचा फोटो",
+  "Vehicle photo {0} of {1}": "{1} पैकी {0} वाहनाचा फोटो",
   "Vehicle type": "वाहनाचा प्रकार",
   "vehicle-{0}.jpg": "वाहन-{0}.jpg",
   "Vehicles": "वाहने",

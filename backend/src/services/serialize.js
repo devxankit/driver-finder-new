@@ -112,7 +112,7 @@ export function driverOut(u, { phone = false, docs = [], link = null, distanceKm
 }
 
 /** Job post. `owner` is a populated User (or null). */
-export function jobOut(j, { owner = null, ownerVehicles = 0, application = null, saved = false } = {}) {
+export function jobOut(j, { owner = null, ownerVehicles = 0, application = null, saved = false, photos = [] } = {}) {
   return {
     id: id(j),
     ownerId: id(j.owner),
@@ -140,6 +140,8 @@ export function jobOut(j, { owner = null, ownerVehicles = 0, application = null,
     status: j.status,
     applicants: j.applicants ?? 0,
     postedAt: new Date(j.createdAt).getTime(),
+    /** The vehicle's images (the owner's photos), first one is the cover. */
+    photos: photos.map(publicUrl).filter(Boolean),
     application: application ? { id: id(application), status: application.status, at: new Date(application.updatedAt).getTime() } : null,
     saved,
   }
