@@ -78,7 +78,9 @@
   "Work": "Type of work",
   "Year": "Year of manufacture",
   "You are hired!": "You got the job!",
-  "Search drivers by name or city": "Search by name or city"
+  "Search drivers by name or city": "Search by name or city",
+  "Idle {0}/day": "Waiting allowance {0}/day",
+  "Idle {0}/day after {1} hrs": "Waiting allowance {0}/day after {1} hours"
  },
  "gu": {
   "{0} live": "{0} active",
@@ -152,7 +154,9 @@
   "Work": "Type of work",
   "Year": "Year of manufacture",
   "You are hired!": "You got the job!",
-  "Search drivers by name or city": "Search by name or city"
+  "Search drivers by name or city": "Search by name or city",
+  "Idle {0}/day": "Waiting allowance {0}/day",
+  "Idle {0}/day after {1} hrs": "Waiting allowance {0}/day after {1} hours"
  },
  "bn": {
   "{0} live": "{0} active",
@@ -226,7 +230,9 @@
   "Work": "Type of work",
   "Year": "Year of manufacture",
   "You are hired!": "You got the job!",
-  "Search drivers by name or city": "Search by name or city"
+  "Search drivers by name or city": "Search by name or city",
+  "Idle {0}/day": "Waiting allowance {0}/day",
+  "Idle {0}/day after {1} hrs": "Waiting allowance {0}/day after {1} hours"
  },
  "pa": {
   "{0} live": "{0} active",
@@ -300,7 +306,9 @@
   "Work": "Type of work",
   "Year": "Year of manufacture",
   "You are hired!": "You got the job!",
-  "Search drivers by name or city": "Search by name or city"
+  "Search drivers by name or city": "Search by name or city",
+  "Idle {0}/day": "Waiting allowance {0}/day",
+  "Idle {0}/day after {1} hrs": "Waiting allowance {0}/day after {1} hours"
  },
  "ta": {
   "{0} live": "{0} active",
@@ -374,7 +382,9 @@
   "Work": "Type of work",
   "Year": "Year of manufacture",
   "You are hired!": "You got the job!",
-  "Search drivers by name or city": "Search by name or city"
+  "Search drivers by name or city": "Search by name or city",
+  "Idle {0}/day": "Waiting allowance {0}/day",
+  "Idle {0}/day after {1} hrs": "Waiting allowance {0}/day after {1} hours"
  },
  "te": {
   "{0} live": "{0} active",
@@ -448,7 +458,9 @@
   "Work": "Type of work",
   "Year": "Year of manufacture",
   "You are hired!": "You got the job!",
-  "Search drivers by name or city": "Search by name or city"
+  "Search drivers by name or city": "Search by name or city",
+  "Idle {0}/day": "Waiting allowance {0}/day",
+  "Idle {0}/day after {1} hrs": "Waiting allowance {0}/day after {1} hours"
  },
  "kn": {
   "{0} live": "{0} active",
@@ -522,6 +534,8 @@
   "Work": "Type of work",
   "Year": "Year of manufacture",
   "You are hired!": "You got the job!",
-  "Search drivers by name or city": "Search by name or city"
+  "Search drivers by name or city": "Search by name or city",
+  "Idle {0}/day": "Waiting allowance {0}/day",
+  "Idle {0}/day after {1} hrs": "Waiting allowance {0}/day after {1} hours"
  }
 }

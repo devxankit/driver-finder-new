@@ -70,5 +70,7 @@
  "Salary as posted": "Salary as written in the job advertisement",
  "I will call you": "I will phone you",
  "Come for a trial drive": "Please come for a test drive",
- "Search drivers by name or city": "Search by name or city"
+ "Search drivers by name or city": "Search by name or city",
+ "Idle {0}/day": "Waiting allowance {0}/day",
+ "Idle {0}/day after {1} hrs": "Waiting allowance {0}/day after {1} hours"
 }

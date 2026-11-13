@@ -21,6 +21,7 @@ import { DetailSkeleton, JobCardSkeleton } from '../components/Skeleton';
 import { api, ApiError, fileSource } from '../api/client';
 import { daysLeft, firstName, rupees, shortDate, timeAgo } from '../utils/format';
 import { askedBefore, useMyLocation } from '../utils/location';
+import { useTx } from '../i18n/auto';
 
 function useJobLabels() {
   const { t } = useTranslation();
@@ -125,6 +126,8 @@ export function DriverHomeScreen({ navigation }: any) {
   const insets = useSafeAreaInsets();
   const { t } = useTranslation();
   const labels = useJobLabels();
+  // Re-render when the driver's name arrives in the chosen language (it is part of the greeting).
+  const tr = useTx();
   const { driver, me, lang, notices, kyc, plan, hasPlan, saved, toggleSave, applications } = useStore();
   // The feed is cached; the applications list is live, so a job shows "Applied" right after applying.
   const appliedTo = React.useMemo(() => new Map(applications.map((a) => [a.job.id, a.status])), [applications]);
@@ -208,7 +211,7 @@ export function DriverHomeScreen({ navigation }: any) {
             </Pressable>
             <View style={{ flex: 1 }}>
               <T w="extrabold" size={18} numberOfLines={1}>
-                {t('home.hello', { name: firstName(driver?.name) || 'Driver' })}
+                {t('home.hello', { name: tr(firstName(driver?.name) || 'Driver') })}
               </T>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                 <MapPin size={14} color={colors.yellowDark} />
@@ -221,7 +224,7 @@ export function DriverHomeScreen({ navigation }: any) {
               onPress={() => navigation.navigate('Language', { fromSettings: true })}
               accessibilityLabel="Change language"
               style={{ height: 40, paddingHorizontal: 12, borderRadius: 20, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: colors.line }}>
-              <T w="bold" size={14}>
+              <T raw w="bold" size={14}>
                 अ / A
               </T>
             </Pressable>

@@ -57,7 +57,7 @@ export function VehicleGallery({ photos, k, height }: { photos?: string[]; k: Ca
           <Counter i={index} n={list.length} style={{ right: 14, bottom: 12 }} />
           <View pointerEvents="none" style={{ position: 'absolute', bottom: 18, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 6 }}>
             {list.map((u, i) => (
-              <View key={u} style={{ width: i === index ? 18 : 7, height: 7, borderRadius: 4, backgroundColor: i === index ? colors.yellow : 'rgba(255,255,255,0.85)' }} />
+              <View key={u} style={{ width: i === index ? 18 : 8, height: 8, borderRadius: 4, backgroundColor: i === index ? colors.yellow : 'rgba(17,17,17,0.45)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.9)' }} />
             ))}
           </View>
         </>

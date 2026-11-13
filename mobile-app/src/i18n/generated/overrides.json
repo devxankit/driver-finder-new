@@ -226,7 +226,9 @@
   "Done": "हो गया",
   "How will you pay?": "आप भुगतान कैसे करेंगे?",
   "Which vehicle needs a driver?": "किस गाड़ी के लिए ड्राइवर चाहिए?",
-  "Check your job post": "अपनी नौकरी की पोस्ट जाँच लें"
+  "Check your job post": "अपनी नौकरी की पोस्ट जाँच लें",
+  "Idle {0}/day": "इंतज़ार {0}/दिन",
+  "Idle {0}/day after {1} hrs": "इंतज़ार {0}/दिन, {1} घंटे बाद"
  },
  "mr": {
   "Truck": "ट्रक",
