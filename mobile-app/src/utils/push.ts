@@ -10,7 +10,7 @@
  *
  * Tapping a notification opens the chat it is about, or the notification list.
  */
-import { PermissionsAndroid, Platform } from 'react-native';
+import { Linking, PermissionsAndroid, Platform } from 'react-native';
 import { createNavigationContainerRef } from '@react-navigation/native';
 import {
   deleteToken,
@@ -54,11 +54,25 @@ function openFromPush(msg: { data?: PushData } | null) {
   flushPendingOpen();
 }
 
+/** driverfinder://push?screen=Chat&connectionId=...&name=... (built by PushService.kt) -> its values. */
+function fromLink(url?: string | null) {
+  if (!url || !url.startsWith('driverfinder://push')) return;
+  const data: PushData = {};
+  for (const part of (url.split('?')[1] ?? '').split('&')) {
+    const [k, v = ''] = part.split('=');
+    if (k) data[decodeURIComponent(k)] = decodeURIComponent(v.replace(/\+/g, ' '));
+  }
+  openFromPush({ data });
+}
+
 let tapsWired = false;
 /** Call once at start-up: handles taps on notifications (app in background, or started by the tap). */
 export function wirePushTaps() {
   if (tapsWired) return;
   tapsWired = true;
+  // Notifications built by the app (colour logo) open a driverfinder://push link.
+  Linking.getInitialURL().then(fromLink).catch(() => {});
+  Linking.addEventListener('url', ({ url }) => fromLink(url));
   try {
     const m = getMessaging();
     onNotificationOpenedApp(m, openFromPush);

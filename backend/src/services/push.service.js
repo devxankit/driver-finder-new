@@ -70,14 +70,15 @@ export async function localise(lang, title, text) {
 }
 
 async function sendTo(tokens, { title, text, data }) {
+  // Data-only: the app builds the notification itself (PushService.kt) so it can show the
+  // full-colour logo beside the text, which FCM's own notifications cannot do.
   const res = await client().sendEachForMulticast({
     tokens,
-    notification: { title, body: text },
-    data: strings(data),
+    data: strings({ ...data, dfTitle: title, dfBody: text }),
     android: {
       priority: 'high',
+      ttl: 3 * 24 * 3600 * 1000,
       collapseKey: data?.connectionId ? `chat-${data.connectionId}` : undefined,
-      notification: { channelId: 'default', sound: 'default', color: '#FEBE02', icon: 'ic_notification', tag: data?.connectionId ? `chat-${data.connectionId}` : undefined },
     },
   })
   return res.responses.map((r, i) => (r.success ? null : DEAD.has(r.error?.code) ? tokens[i] : null)).filter(Boolean)
