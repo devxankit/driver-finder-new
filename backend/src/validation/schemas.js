@@ -3,16 +3,19 @@ import { z } from 'zod'
 const str = (max = 200) => z.string().trim().max(max)
 const req = (msg, max = 200) => z.string().trim().min(1, msg).max(max)
 
+/** The app's 9 languages; anything else is ignored (never blocks sign-in). */
+const langField = z.enum(['en', 'hi', 'mr', 'gu', 'bn', 'pa', 'ta', 'te', 'kn']).optional().catch(undefined)
+
 export const phoneSchema = z.object({ phone: z.string().trim().min(10, 'Enter your 10-digit mobile number.').max(15) })
 
 export const verifySchema = z.object({
   phone: z.string().trim().min(10).max(15),
   code: z.string().trim().regex(/^\d{4,8}$/, 'Enter the OTP you received.'),
-  lang: str(5).optional(),
+  lang: langField,
 })
 
 export const meSchema = z.object({
-  lang: str(5).optional(),
+  lang: langField,
   name: str(80).optional(),
   city: str(80).optional(),
   prefs: z.object({ jobs: z.boolean().optional(), chats: z.boolean().optional(), whatsapp: z.boolean().optional() }).optional(),

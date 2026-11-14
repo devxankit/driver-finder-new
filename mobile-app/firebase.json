@@ -1,7 +1,6 @@
 {
   "react-native": {
     "messaging_android_notification_channel_id": "default",
-    "messaging_android_notification_color": "@color/notification",
     "messaging_auto_init_enabled": true
   }
 }

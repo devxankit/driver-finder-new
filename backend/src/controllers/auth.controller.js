@@ -42,6 +42,11 @@ export async function verify(req, res) {
     isNew = true
   }
   if (user.status === 'suspended') throw ApiError.forbidden('This account is suspended. Please contact support.', 'ACCOUNT_SUSPENDED')
+  // The language picked before signing in wins: push notifications are sent in user.lang.
+  if (!isNew && req.body.lang && req.body.lang !== user.lang) {
+    user.lang = req.body.lang
+    await user.save()
+  }
 
   res.json({ success: true, token: signUserToken(user), isNew, user: await loadMe(user) })
 }

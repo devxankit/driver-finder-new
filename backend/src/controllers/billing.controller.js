@@ -18,6 +18,20 @@ function razorpay() {
   return client
 }
 
+/**
+ * Creates a Razorpay order. Any failure (their side, our keys, or no answer at
+ * all, where their SDK itself throws a TypeError) becomes a clear 502.
+ */
+async function createRzpOrder(opts) {
+  const rzp = razorpay()
+  try {
+    return await rzp.orders.create(opts)
+  } catch (e) {
+    console.error('[razorpay]', e?.statusCode ?? '-', e?.error?.description ?? e?.message ?? e)
+    throw new ApiError(502, 'Payments are not working right now. Please try again in a few minutes.', { code: 'PAYMENT_GATEWAY' })
+  }
+}
+
 /** GET /api/plans: plans for the user's role. */
 export async function listPlans(req, res) {
   const plans = await Plan.find({ active: true, ...(req.user.role ? { role: req.user.role } : {}) }).sort({ order: 1, months: 1 }).lean()
@@ -52,7 +66,7 @@ export async function createOrder(req, res) {
   if (!plan.price) throw ApiError.badRequest('This plan will be available at launch.', 'PRICE_NOT_SET')
 
   const receipt = `DF-${Date.now().toString(36).toUpperCase()}`
-  const order = await razorpay().orders.create({
+  const order = await createRzpOrder({
     amount: plan.price * 100,
     currency: env.razorpay.currency,
     receipt,
@@ -129,7 +143,7 @@ export async function createRegistrationOrder(req, res) {
     return res.json({ success: true, alreadyPaid: true })
   }
   const receipt = `DFR-${Date.now().toString(36).toUpperCase()}`
-  const order = await razorpay().orders.create({
+  const order = await createRzpOrder({
     amount: fee * 100,
     currency: env.razorpay.currency,
     receipt,

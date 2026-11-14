@@ -20,6 +20,7 @@ import { getMessaging } from 'firebase-admin/messaging'
 import { env } from '../config/env.js'
 import User from '../models/User.js'
 import { translateMany } from './translate.service.js'
+import { translateFixed } from './i18n.service.js'
 
 let messaging = null
 let tried = false
@@ -47,11 +48,25 @@ const DEAD = new Set(['messaging/registration-token-not-registered', 'messaging/
 /** All data values must be strings for FCM. */
 const strings = (o = {}) => Object.fromEntries(Object.entries(o).filter(([, v]) => v != null).map(([k, v]) => [k, String(v)]))
 
-/** Title and text in the user's language (cached translations; English if the translator is down). */
-async function localise(lang, title, text) {
+/**
+ * Title and text in the user's language: the app's dictionaries first (every
+ * fixed server message, hand-checked), then the cached machine translator for
+ * free text (chat messages, admin broadcasts), English only if both fail.
+ */
+export async function localise(lang, title, text) {
   if (!lang || lang === 'en') return [title, text]
-  const out = await translateMany([title, text], lang).catch(() => [null, null])
-  return [out[0] || title, out[1] || text]
+  const fixed = [translateFixed(title, lang), translateFixed(text, lang)]
+  const todo = [title, text].filter((s, i) => !fixed[i] && s)
+  const machine = todo.length ? await translateMany(todo, lang).catch(() => todo.map(() => null)) : []
+  const pick = (s, i) => fixed[i] ?? (s ? machine[todo.indexOf(s)] : null) ?? s
+  let out = [pick(title, 0), pick(text, 1)]
+  // Job titles in quotes ("Truck driver, Bhiwandi") in the user's language too; names stay as written.
+  const quoted = [...new Set(out.flatMap((s) => [...(s ?? '').matchAll(/"([^"]{2,120})"/g)].map((m) => m[1])).filter((q) => /[A-Za-z]{3}/.test(q)))]
+  if (quoted.length) {
+    const tr = await translateMany(quoted, lang).catch(() => quoted.map(() => null))
+    out = out.map((s) => (s ? s.replace(/"([^"]{2,120})"/g, (all, q) => (tr[quoted.indexOf(q)] ? `"${tr[quoted.indexOf(q)]}"` : all)) : s))
+  }
+  return out
 }
 
 async function sendTo(tokens, { title, text, data }) {
