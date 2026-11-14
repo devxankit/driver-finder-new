@@ -36,6 +36,12 @@ export function errorHandler(err, req, res, next) {
     statusCode = 409
     code = 'DUPLICATE'
     message = 'This already exists.'
+  } else if (err.error?.description && Number.isInteger(err.statusCode)) {
+    // Razorpay SDK error ({ statusCode, error: { code, description } }): their side or our keys.
+    statusCode = 502
+    code = 'PAYMENT_GATEWAY'
+    message = 'Payments are not working right now. Please try again in a few minutes.'
+    console.error('[razorpay]', err.statusCode, err.error.code, err.error.description)
   } else if (err.type === 'entity.too.large') {
     statusCode = 413
     message = 'That request was too large.'
@@ -44,7 +50,7 @@ export function errorHandler(err, req, res, next) {
     message = 'Invalid JSON body.'
   }
 
-  if (statusCode >= 500) console.error('[error]', err)
+  if (statusCode >= 500 && code !== 'PAYMENT_GATEWAY') console.error('[error]', err)
 
   res.status(statusCode).json({
     success: false,

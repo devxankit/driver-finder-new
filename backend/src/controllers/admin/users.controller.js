@@ -19,7 +19,7 @@ import { assertId, DAY_MS, like, paging } from '../../utils/helpers.js'
 import { absolutePath, publicUrl } from '../../middleware/upload.js'
 import { signAdminToken } from '../../middleware/auth.js'
 import { notify } from '../../services/notify.service.js'
-import { emitToUser, syncAdmins } from '../../services/realtime.js'
+import { disconnectUser, emitToUser, syncAdmins } from '../../services/realtime.js'
 
 const adminOut = (a) => ({ id: String(a._id), name: a.name, email: a.email, role: a.role, active: a.active, lastLoginAt: a.lastLoginAt, createdAt: a.createdAt })
 
@@ -284,9 +284,12 @@ export async function setUserStatus(req, res) {
   if (!u) throw ApiError.notFound('User not found.')
   u.status = req.body.status
   u.suspendReason = req.body.status === 'suspended' ? req.body.reason ?? '' : ''
-  emitToUser(String(u._id), 'me:changed')
   // A suspended owner's jobs drop out of the driver feed automatically (see jobs.feed).
   await u.save()
+  // After the save, so the app's refetch already sees the new status.
+  emitToUser(String(u._id), 'me:changed')
+  if (u.status === 'suspended') setTimeout(() => disconnectUser(String(u._id)), 1500)
+  syncAdmins('users')
   res.json({ success: true, user: userRow(u.toObject()) })
 }
 

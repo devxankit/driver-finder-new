@@ -117,7 +117,10 @@ export async function toggleSave(req, res) {
   assertId(req.params.id, 'Job')
   const i = req.user.saved.findIndex((x) => String(x) === req.params.id)
   if (i >= 0) req.user.saved.splice(i, 1)
-  else req.user.saved.push(req.params.id)
+  else {
+    if (!(await Job.exists({ _id: req.params.id, status: { $ne: 'hidden' } }))) throw ApiError.notFound('This job is no longer available.')
+    req.user.saved.push(req.params.id)
+  }
   await req.user.save()
   res.json({ success: true, saved: i < 0, ids: req.user.saved.map(String) })
 }
@@ -156,6 +159,8 @@ export async function updateJob(req, res) {
   if (job.status === 'hidden') throw ApiError.forbidden('This job was hidden by the Driver Finder team. Please contact support.', 'JOB_HIDDEN')
   const { vehicleId, ...data } = req.body
   job.set(data)
+  // Per-trip pay on top of the salary only exists on monthly jobs.
+  if (job.payType !== 'monthly') job.tripPay = undefined
   await job.save()
   syncUsers(req.user._id, 'jobs')
   syncAdmins('jobs')

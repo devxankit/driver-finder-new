@@ -9,12 +9,19 @@ import { requireFile, uploadCategoryImage } from '../middleware/upload.js'
 import * as s from '../validation/schemas.js'
 import * as u from '../controllers/admin/users.controller.js'
 import * as c from '../controllers/admin/content.controller.js'
+import { clearMetaCache } from '../controllers/me.controller.js'
 
 const r = Router()
 
 r.post('/auth/login', loginLimiter, validate(s.adminLoginSchema), u.login)
 
 r.use(protectAdmin)
+
+// Any successful admin change may touch what /api/meta serves (categories, cities, plans, fees, support).
+r.use((req, res, next) => {
+  if (req.method !== 'GET') res.on('finish', () => res.statusCode < 400 && clearMetaCache())
+  next()
+})
 
 r.get('/auth/me', u.me)
 r.post('/auth/password', validate(s.passwordSchema), u.changePassword)

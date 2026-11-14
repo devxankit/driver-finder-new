@@ -38,11 +38,10 @@ main() {
   )
 
   echo "==> Restarting the backend"
-  if pm2 describe driver-finder >/dev/null 2>&1; then
-    pm2 restart driver-finder --update-env
-  else
-    pm2 start src/server.js --name driver-finder --cwd "$APP_DIR/backend" --time
-  fi
+  # Start fresh from backend/ecosystem.config.cjs so its settings always apply.
+  # The old process gets a SIGINT and finishes its requests first.
+  pm2 delete driver-finder >/dev/null 2>&1 || true
+  pm2 start backend/ecosystem.config.cjs >/dev/null
   pm2 save >/dev/null
 
   echo "==> Checking"

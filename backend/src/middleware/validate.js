@@ -20,3 +20,19 @@ export function validate(schema) {
     next()
   }
 }
+
+/**
+ * For PATCH: like validate(), but keeps only the fields the client sent. Zod 4
+ * fills .default() values even inside .partial(), so without this a PATCH of
+ * { status: 'paused' } would blank every field that has a default.
+ */
+export function validatePatch(schema) {
+  const check = validate(schema)
+  return (req, res, next) => {
+    const sent = new Set(Object.keys(req.body ?? {}))
+    check(req, res, () => {
+      req.body = Object.fromEntries(Object.entries(req.body).filter(([k]) => sent.has(k)))
+      next()
+    })
+  }
+}

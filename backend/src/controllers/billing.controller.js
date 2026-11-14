@@ -84,7 +84,7 @@ async function activate(payment, paymentId) {
   const done = await Payment.findOneAndUpdate(
     { _id: payment._id, status: { $ne: 'paid' } },
     { status: 'paid', paymentId },
-    { new: true }
+    { returnDocument: 'after' }
   )
   if (payment.kind === 'registration') {
     if (done) {
@@ -179,7 +179,12 @@ export async function webhook(req, res) {
   const expected = crypto.createHmac('sha256', secret).update(req.body).digest('hex')
   if (!sig || sig !== expected) return res.status(400).json({ success: false })
 
-  const event = JSON.parse(req.body.toString('utf8'))
+  let event
+  try {
+    event = JSON.parse(req.body.toString('utf8'))
+  } catch {
+    return res.status(400).json({ success: false })
+  }
   if (event.event === 'payment.captured' || event.event === 'order.paid') {
     const p = event.payload?.payment?.entity
     const payment = p?.order_id && (await Payment.findOne({ orderId: p.order_id }))

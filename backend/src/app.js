@@ -20,6 +20,8 @@ const app = express()
 
 app.set('trust proxy', env.trustProxy)
 app.disable('x-powered-by')
+// Flat query strings only: "?category[$ne]=x" must stay a plain key, never a MongoDB operator.
+app.set('query parser', 'simple')
 
 // Images under /uploads are shown by the admin panel on another origin.
 // No CSP header: the website served below loads Google Fonts and Razorpay Checkout.

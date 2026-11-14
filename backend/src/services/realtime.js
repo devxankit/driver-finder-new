@@ -44,6 +44,11 @@ export function syncUsers(userIds, what) {
 
 export const syncAdmins = (what) => emitToAdmins('admin:sync', { what: [].concat(what) })
 
+/** Closes every live socket of a user (suspended or deleted accounts). Their app reconnects and is refused. */
+export function disconnectUser(userId) {
+  if (io && userId) io.in(`user:${userId}`).disconnectSockets(true)
+}
+
 /** The other party of every connection, so presence goes only to people who can see it. */
 async function contactsOf(userId) {
   const conns = await Connection.find({ $or: [{ owner: userId }, { driver: userId }] })

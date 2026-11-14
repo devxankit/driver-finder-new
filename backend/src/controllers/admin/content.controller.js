@@ -20,6 +20,7 @@ import { publicUrl, removeStored, storedPath } from '../../middleware/upload.js'
 import { notify } from '../../services/notify.service.js'
 import { emitToUser, syncAdmins, syncUsers } from '../../services/realtime.js'
 import { notificationOut } from '../../services/serialize.js'
+import { feesSchema } from '../../validation/schemas.js'
 
 const ref = (u) => (u ? { id: String(u._id), name: u.name || u.phone, phone: u.phone, company: u.owner?.company ?? '', role: u.role } : null)
 
@@ -111,7 +112,7 @@ export async function createPlan(req, res) {
 
 export async function updatePlan(req, res) {
   assertId(req.params.id, 'Plan')
-  const plan = await Plan.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true })
+  const plan = await Plan.findByIdAndUpdate(req.params.id, req.body, { returnDocument: 'after', runValidators: true })
   if (!plan) throw ApiError.notFound('Plan not found.')
   res.json({ success: true, plan })
 }
@@ -179,7 +180,7 @@ export async function grantSubscription(req, res) {
   })
   emitToUser(String(user._id), 'me:changed')
   syncAdmins('payments')
-  await notify(user._id, 'Plan extended', `Your plan is active until ${sub.expiresAt.toLocaleDateString('en-IN')}.`, { screen: 'MyPlan' })
+  await notify(user._id, 'Plan extended', `Your plan is active until ${sub.expiresAt.toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' })}.`, { screen: 'MyPlan' })
   res.status(201).json({ success: true })
 }
 
@@ -199,7 +200,7 @@ export async function createCategory(req, res) {
 export async function updateCategory(req, res) {
   assertId(req.params.id, 'Category')
   const { key, ...data } = req.body // the key is referenced by jobs and drivers; never renamed
-  const c = await Category.findByIdAndUpdate(req.params.id, data, { new: true })
+  const c = await Category.findByIdAndUpdate(req.params.id, data, { returnDocument: 'after' })
   if (!c) throw ApiError.notFound('Category not found.')
   res.json({ success: true })
 }
@@ -300,6 +301,13 @@ export async function getAllCms(req, res) {
 
 export async function putCms(req, res) {
   if (!CMS_KEYS.includes(req.params.key)) throw ApiError.notFound('Unknown page.')
-  await Cms.findOneAndUpdate({ key: req.params.key }, { value: req.body.value, updatedBy: req.admin._id }, { upsert: true })
+  let { value } = req.body
+  if (req.params.key === 'fees') {
+    // The app charges this amount through Razorpay: it must be whole rupees.
+    const r = feesSchema.safeParse(value ?? {})
+    if (!r.success) throw ApiError.validation('Enter the registration fee in whole rupees (0 to 10000).', { registration: 'Invalid amount.' })
+    value = { ...value, ...r.data }
+  }
+  await Cms.findOneAndUpdate({ key: req.params.key }, { value, updatedBy: req.admin._id }, { upsert: true })
   res.json({ success: true })
 }

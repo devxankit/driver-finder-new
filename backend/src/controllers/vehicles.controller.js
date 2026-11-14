@@ -6,6 +6,17 @@ import { MAX_VEHICLE_PHOTOS, MIN_VEHICLE_PHOTOS, publicUrl, removeStored, stored
 
 const TOO_FEW = `Please upload at least ${MIN_VEHICLE_PHOTOS} vehicle images.`
 
+/** "MH 04-ab 1234" and "MH04AB1234" are the same registration. */
+const plate = (n) => String(n ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '')
+
+/** One owner cannot list the same registration number twice. */
+async function assertNewNumber(ownerId, number, exceptId = null) {
+  const mine = await Vehicle.find({ owner: ownerId, ...(exceptId ? { _id: { $ne: exceptId } } : {}) }, { number: 1 }).lean()
+  if (mine.some((v) => plate(v.number) === plate(number))) {
+    throw ApiError.conflict('You have already added a vehicle with this number.', 'DUPLICATE_VEHICLE')
+  }
+}
+
 const mine = async (req) => {
   assertId(req.params.id, 'Vehicle')
   const v = await Vehicle.findOne({ _id: req.params.id, owner: req.user._id })
@@ -29,6 +40,7 @@ export async function addVehicle(req, res) {
   if (req.is('multipart/form-data') && photos.length < MIN_VEHICLE_PHOTOS) {
     throw ApiError.validation(TOO_FEW, { files: TOO_FEW })
   }
+  await assertNewNumber(req.user._id, data.number)
   const v = await Vehicle.create({ ...data, driverName: driver ?? '', owner: req.user._id, photos, photo: photos[0] ?? null })
   res.status(201).json({ success: true, vehicle: vehicleOut(v) })
 }
@@ -62,6 +74,7 @@ export async function setVehiclePhotos(req, res) {
 export async function updateVehicle(req, res) {
   const v = await mine(req)
   const { driver, ...data } = req.body
+  if (data.number !== undefined && plate(data.number) !== plate(v.number)) await assertNewNumber(req.user._id, data.number, v._id)
   v.set({ ...data, ...(driver !== undefined ? { driverName: driver } : {}) })
   await v.save()
   res.json({ success: true, vehicle: vehicleOut(v) })

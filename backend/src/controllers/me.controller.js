@@ -7,7 +7,7 @@ import { activeSubscription } from '../services/gate.service.js'
 import { meOut, notificationOut, planOut } from '../services/serialize.js'
 import { publicUrl, removeStored, storedPath } from '../middleware/upload.js'
 import { env } from '../config/env.js'
-import { syncAdmins } from '../services/realtime.js'
+import { disconnectUser, syncAdmins } from '../services/realtime.js'
 import { geoJson } from '../services/geo.service.js'
 import { translateMany } from '../services/translate.service.js'
 
@@ -85,10 +85,21 @@ export async function uploadMyPhoto(req, res) {
 
 /** DELETE /api/me: soft delete (Play Store requires in-app account deletion). */
 export async function deleteMe(req, res) {
+  const photo = req.user.photo
   req.user.set({ deletedAt: new Date(), name: '', city: '', photo: null, saved: [] })
   await req.user.save()
-  await Job.updateMany({ owner: req.user._id, status: 'active' }, { status: 'closed' })
+  removeStored(photo)
+  await Promise.all([Job.updateMany({ owner: req.user._id, status: 'active' }, { status: 'closed' }), removeKycDocs(req.user._id)])
+  disconnectUser(String(req.user._id))
+  syncAdmins('users')
   res.json({ success: true })
+}
+
+/** Deletes a user's KYC documents (Aadhaar, licence, PAN scans): records and files. */
+export async function removeKycDocs(userId) {
+  const docs = await Document.find({ user: userId }).lean()
+  docs.forEach((d) => removeStored(d.file))
+  await Document.deleteMany({ user: userId })
 }
 
 /* -------------------------------------------------------------------- KYC */
@@ -111,7 +122,7 @@ export async function uploadKycDoc(req, res) {
   await Document.findOneAndUpdate(
     { user: req.user._id, key },
     { file: storedPath(req.file), mime: req.file.mimetype, status: 'uploaded', reason: '' },
-    { upsert: true, new: true }
+    { upsert: true, returnDocument: 'after' }
   )
   res.json({ success: true, user: await loadMe(req.user) })
 }
@@ -157,6 +168,7 @@ export async function createReport(req, res) {
     doc.targetUser = job.owner
     await Job.updateOne({ _id: job._id }, { $inc: { reports: 1 } })
   } else {
+    if (!(await User.exists({ _id: targetId }))) throw ApiError.notFound('User not found.')
     doc.targetUser = targetId
   }
   await Report.create(doc)
@@ -177,8 +189,24 @@ export async function getFees() {
   return { ...CMS_DEFAULTS.fees, ...(doc?.value ?? {}) }
 }
 
+/**
+ * /api/meta is loaded on every app start but changes only when the admin edits
+ * categories, cities, plans or content, so it is built once and kept for a
+ * minute. Admin writes and new cities clear it at once (clearMetaCache).
+ */
+let metaCache = { at: 0, body: null }
+let metaGen = 0
+const META_TTL_MS = 60 * 1000
+export const clearMetaCache = () => {
+  metaGen++
+  metaCache = { at: 0, body: null }
+}
+
 /** GET /api/meta: everything the app needs at start-up. */
 export async function getMeta(req, res) {
+  res.set('Cache-Control', 'public, max-age=60')
+  if (metaCache.body && Date.now() - metaCache.at < META_TTL_MS) return res.json(metaCache.body)
+  const gen = metaGen
   const [categories, masters, plans, support, fees] = await Promise.all([
     Category.find({ active: true }).sort({ order: 1, label: 1 }).lean(),
     Master.find({ active: true }).sort({ order: 1, value: 1 }).lean(),
@@ -186,8 +214,7 @@ export async function getMeta(req, res) {
     Cms.findOne({ key: 'support' }).lean(),
     getFees(),
   ])
-  res.set('Cache-Control', 'public, max-age=60')
-  res.json({
+  const body = {
     success: true,
     categories: categories.map((c) => ({
       key: c.key,
@@ -204,7 +231,10 @@ export async function getMeta(req, res) {
     fees,
     otpEnabled: env.otp.enabled,
     razorpayKeyId: env.razorpay.keyId || null,
-  })
+  }
+  // An admin edit during the queries cleared the cache: don't store the older data.
+  if (gen === metaGen) metaCache = { at: Date.now(), body }
+  res.json(body)
 }
 
 /** GET /api/cms/:key (terms, privacy, refund, faq, support) */
@@ -223,6 +253,7 @@ export async function addCity(req, res) {
   if (existing) return res.json({ success: true, city: existing.value, created: false })
   const last = await Master.findOne({ type: 'city' }).sort({ order: -1 }).select('order').lean()
   await Master.create({ type: 'city', value: name, order: (last?.order ?? 0) + 1, addedBy: req.user._id })
+  clearMetaCache()
   syncAdmins('masters')
   res.status(201).json({ success: true, city: name, created: true })
 }

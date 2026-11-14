@@ -3,7 +3,7 @@ import { ApiError } from '../utils/ApiError.js'
 import { normalisePhone } from '../utils/helpers.js'
 import { requestOtp, verifyOtp } from '../services/otp.service.js'
 import { signUserToken } from '../middleware/auth.js'
-import { loadMe } from './me.controller.js'
+import { loadMe, removeKycDocs } from './me.controller.js'
 
 function phoneOrThrow(raw) {
   const phone = normalisePhone(raw)
@@ -37,6 +37,8 @@ export async function verify(req, res) {
     user.set({ deletedAt: undefined, role: null, name: '', city: '', driver: undefined, owner: undefined, profileDone: false, kyc: { status: 'none' } })
     if (req.body.lang) user.lang = req.body.lang
     await user.save()
+    // Accounts deleted before documents were removed on deletion.
+    await removeKycDocs(user._id)
     isNew = true
   }
   if (user.status === 'suspended') throw ApiError.forbidden('This account is suspended. Please contact support.', 'ACCOUNT_SUSPENDED')

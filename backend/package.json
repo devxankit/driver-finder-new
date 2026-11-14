@@ -11,6 +11,8 @@
     "seed": "node src/scripts/seed.js",
     "create-admin": "node src/scripts/createAdmin.js",
     "restore-assets": "node src/scripts/restoreAssets.js",
+    "backup": "node src/scripts/backup.js",
+    "restore": "node src/scripts/restore.js",
     "start:render": "node src/scripts/restoreAssets.js && node src/server.js"
   },
   "engines": {
