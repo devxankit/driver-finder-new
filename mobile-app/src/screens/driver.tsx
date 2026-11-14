@@ -23,6 +23,14 @@ import { daysLeft, firstName, rupees, shortDate, timeAgo } from '../utils/format
 import { askedBefore, useMyLocation } from '../utils/location';
 import { useTx } from '../i18n/auto';
 
+/** "Just now" / "5h ago" / "12d ago" for a job's post time (key: home.posted or job.postedBy). */
+function postedText(t: (key: string, o?: Record<string, number>) => string, at: number, key: 'home.posted' | 'job.postedBy') {
+  const h = hoursAgo(at);
+  if (h < 1) return t(`${key}Now`);
+  if (h < 24) return t(key, { h });
+  return t(`${key}Days`, { d: Math.floor(h / 24) });
+}
+
 function useJobLabels() {
   const { t } = useTranslation();
   return (j: Job) => ({
@@ -30,7 +38,7 @@ function useJobLabels() {
     trip: t('common.trip'),
     perMonth: t('common.perMonth'),
     perTrip: t('common.perTrip'),
-    posted: t('home.posted', { h: hoursAgo(j.postedAt) }),
+    posted: postedText(t, j.postedAt, 'home.posted'),
   });
 }
 
@@ -487,7 +495,7 @@ export function JobDetailScreen({ navigation, route }: any) {
             ) : null}
           </View>
           <T size={12} color={colors.muted}>
-            {t('job.postedBy', { h: hoursAgo(j.postedAt) })} · {t('home.applied', { n: j.applicants })}
+            {postedText(t, j.postedAt, 'job.postedBy')} · {t('home.applied', { n: j.applicants })}
           </T>
         </View>
 
@@ -879,7 +887,7 @@ export function DriverProfileTab({ navigation }: any) {
           <ListRow icon={<LogOut size={19} color={colors.redText} />} title={t('profile.logout')} danger onPress={confirmLogout} last />
         </Section>
         <T raw size={12} color={colors.muted} center style={{ marginTop: 16 }}>
-          Driver Finder 1.3.1
+          Driver Finder 1.3.2
         </T>
       </ScrollView>
     </View>

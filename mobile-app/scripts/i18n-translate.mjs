@@ -172,6 +172,8 @@ for (const lang of only.length ? only : LANGS) {
   const fixed = (text) => KEEP.test(text) || overrides[lang]?.[text] !== undefined;
   for (const s of autoList) if (KEEP.test(s)) auto[s] = s;
   for (const k of Object.keys(keys)) if (KEEP.test(keys[k])) keyOut[k] = keys[k];
+  // A new key whose English text has a hand correction is never sent for translation: take the correction.
+  for (const k of Object.keys(keys)) if (overrides[lang]?.[keys[k]] !== undefined) keyOut[k] = overrides[lang][keys[k]];
   const missingAuto = autoList.filter((s) => !fixed(s) && (!auto[s] || stale(s)));
   const missingKeys = Object.keys(keys).filter((k) => !fixed(keys[k]) && (!keyOut[k] || stale(keys[k])));
   // Keys with the same English text are translated once.

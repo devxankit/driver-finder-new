@@ -63,7 +63,7 @@ export class ApiError extends Error {
 
 type Opts = { method?: string; body?: unknown; query?: Record<string, string | number | undefined | null>; timeout?: number };
 
-// 60 s: the Render free plan sleeps when idle and needs up to ~50 s to wake on the first request.
+// 60 s: generous for weak 2G/3G signal on the highway; uploads pass their own longer timeout.
 export async function api<T = any>(path: string, { method = 'GET', body, query, timeout = 60000 }: Opts = {}): Promise<T> {
   let url = `${baseUrl}/api${path}`;
   if (query) {
@@ -98,7 +98,13 @@ export async function api<T = any>(path: string, { method = 'GET', body, query, 
   if (!res.ok || data.success === false) {
     const code = data.code as string | undefined;
     if (res.status === 401 || code === 'ACCOUNT_SUSPENDED') onUnauthorized();
-    throw new ApiError(data.message || `Something went wrong (${res.status}).`, res.status, code);
+    // 502/503/504 without our JSON: nginx answered while the server restarts (an update) or is down.
+    const fallback = res.status >= 502 && res.status <= 504
+      ? 'The server is busy or updating. Please try again in a minute.'
+      : res.status === 413
+        ? 'That file is too large. Please choose a smaller photo.'
+        : `Something went wrong (${res.status}).`;
+    throw new ApiError(data.message || fallback, res.status, code || (res.status >= 502 && res.status <= 504 ? 'SERVER_BUSY' : undefined));
   }
   return data as T;
 }
