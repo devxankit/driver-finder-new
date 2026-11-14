@@ -2,6 +2,7 @@ import rateLimit, { ipKeyGenerator } from 'express-rate-limit'
 import jwt from 'jsonwebtoken'
 import { env, isProduction } from '../config/env.js'
 import { normalisePhone } from '../utils/helpers.js'
+import { isReviewPhone } from '../services/review.service.js'
 
 /**
  * Indian mobile carriers put thousands of phones behind one public IP (CGNAT),
@@ -12,6 +13,8 @@ import { normalisePhone } from '../utils/helpers.js'
 const json = (message) => ({ success: false, message, code: 'RATE_LIMITED' })
 const common = { standardHeaders: 'draft-8', legacyHeaders: false }
 const byIp = (req) => ipKeyGenerator(req.ip)
+/** Google Play review numbers: several reviewers may sign in with them. */
+const reviewNumber = (req) => isReviewPhone(normalisePhone(req.body?.phone))
 const byPhone = (req) => `phone:${normalisePhone(req.body?.phone) ?? String(req.body?.phone ?? '').slice(0, 20)}`
 
 /** The signed-in user (verified token) or else the IP. */
@@ -43,6 +46,7 @@ export const otpPhoneLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   limit: isProduction ? 5 : 100,
   keyGenerator: byPhone,
+  skip: reviewNumber,
   message: json('Too many OTP requests for this number. Please try again after an hour.'),
 })
 
@@ -61,6 +65,7 @@ export const verifyLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 15,
   keyGenerator: byPhone,
+  skip: reviewNumber,
   message: json('Too many login attempts. Please try again after some time.'),
 })
 

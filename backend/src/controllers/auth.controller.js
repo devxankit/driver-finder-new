@@ -4,6 +4,7 @@ import { normalisePhone } from '../utils/helpers.js'
 import { requestOtp, verifyOtp } from '../services/otp.service.js'
 import { signUserToken } from '../middleware/auth.js'
 import { loadMe, removeKycDocs } from './me.controller.js'
+import { isReviewPhone, prepareReviewAccount } from '../services/review.service.js'
 
 function phoneOrThrow(raw) {
   const phone = normalisePhone(raw)
@@ -15,7 +16,7 @@ function phoneOrThrow(raw) {
 export async function sendOtp(req, res) {
   const phone = phoneOrThrow(req.body.phone)
   const existing = await User.findOne({ phone }).select('status suspendReason deletedAt').lean()
-  if (existing?.status === 'suspended' && !existing.deletedAt) {
+  if (existing?.status === 'suspended' && !existing.deletedAt && !isReviewPhone(phone)) {
     throw ApiError.forbidden('This account is suspended. Please contact support.', 'ACCOUNT_SUSPENDED')
   }
   const result = await requestOtp(phone)
@@ -40,6 +41,11 @@ export async function verify(req, res) {
     // Accounts deleted before documents were removed on deletion.
     await removeKycDocs(user._id)
     isNew = true
+  }
+  // Google Play review accounts: always ready to test, whatever the last reviewer did.
+  if (isReviewPhone(phone)) {
+    await prepareReviewAccount(user)
+    isNew = false
   }
   if (user.status === 'suspended') throw ApiError.forbidden('This account is suspended. Please contact support.', 'ACCOUNT_SUSPENDED')
   // The language picked before signing in wins: push notifications are sent in user.lang.

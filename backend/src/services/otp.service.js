@@ -32,8 +32,13 @@ export async function requestOtp(phone) {
     expiresAt: new Date(Date.now() + env.otp.ttlMinutes * 60 * 1000),
   })
 
-  if (env.otp.enabled && !isTestNumber(phone)) {
-    await sendSms(phone, env.smsIndiaHub.message.replace('{otp}', code))
+  // Test / Play review numbers never get an SMS: they always use TEST_OTP_CODE.
+  if (isTestNumber(phone)) {
+    // With SMS on, behave like a real number (the reviewer types the code from the store listing).
+    return env.otp.enabled ? { sent: true, resendIn: env.otp.resendSeconds } : { sent: false, devOtp: code, resendIn: env.otp.resendSeconds }
+  }
+  if (env.otp.enabled) {
+    await sendSms(phone, env.smsIndiaHub.message.replace(/\{otp\}|\{#var#\}/i, code))
     return { sent: true, resendIn: env.otp.resendSeconds }
   }
   return { sent: false, devOtp: code, resendIn: env.otp.resendSeconds }
