@@ -10,20 +10,31 @@ import { T } from './content'
 
 const TITLES = { terms: 'Terms of use', privacy: 'Privacy policy', refund: 'Refund policy' }
 
-/** Plain text from the admin: blank line = paragraph, "# " = heading, "- " = list item. */
+/** **bold** inside a line of admin text. */
+function Inline({ text }) {
+  return String(text)
+    .split(/(\*\*[^*]+\*\*)/g)
+    .map((part, i) => (part.startsWith('**') && part.endsWith('**') ? <b key={i} className="font-semibold text-ink">{part.slice(2, -2)}</b> : part))
+}
+
+/**
+ * Plain text from the admin: blank line = paragraph, "# " / "## " / "### " = heading,
+ * lines starting "- " = list, **bold** inside a line.
+ */
 function Rich({ text }) {
   const blocks = String(text || '').split(/\n\s*\n/)
   return blocks.map((b, i) => {
     const lines = b.split('\n')
-    if (b.startsWith('# ')) return <h2 key={i} className="mt-8 text-xl font-bold">{b.slice(2)}</h2>
+    const h = b.match(/^#{1,3} (.*)/)
+    if (h && lines.length === 1) return <h2 key={i} className="mt-8 text-xl font-bold text-ink"><Inline text={h[1]} /></h2>
     if (lines.every((l) => l.trim().startsWith('- '))) {
       return (
         <ul key={i} className="mt-4 list-disc space-y-1 pl-6">
-          {lines.map((l) => <li key={l}>{l.trim().slice(2)}</li>)}
+          {lines.map((l, j) => <li key={j}><Inline text={l.trim().slice(2)} /></li>)}
         </ul>
       )
     }
-    return <p key={i} className="mt-4 leading-relaxed whitespace-pre-line">{b}</p>
+    return <p key={i} className="mt-4 leading-relaxed whitespace-pre-line"><Inline text={b} /></p>
   })
 }
 

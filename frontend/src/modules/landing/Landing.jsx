@@ -852,6 +852,7 @@ export function Footer({ t }) {
             <a href="/#faq" className="hover:text-white">{t.nav.faq}</a>
             <Link to="/refund" className="hover:text-white">{t.footer.refund}</Link>
             <a href="/#contact" className="hover:text-white">{t.nav.contact}</a>
+            <Link to="/delete-account" className="hover:text-white">{t.footer.deleteAccount}</Link>
             <Link to="/admin" className="hover:text-white">{t.footer.admin}</Link>
           </nav>
         </div>

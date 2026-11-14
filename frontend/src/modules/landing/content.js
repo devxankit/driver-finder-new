@@ -95,7 +95,7 @@ export const T = {
     cta: { title: 'Your next driver is already on Driver Finder.', sub: 'Download the app, sign in with your phone number, and get verified. It takes a few minutes.' },
     faqSub: 'Still unsure? Leave your number below and we will call you.',
     vehiclesMore: 'jobs open',
-    footer: { terms: 'Terms of use', privacy: 'Privacy policy', refund: 'Refund policy', admin: 'Admin', rights: 'All rights reserved.' },
+    footer: { terms: 'Terms of use', privacy: 'Privacy policy', refund: 'Refund policy', deleteAccount: 'Delete account', admin: 'Admin', rights: 'All rights reserved.' },
   },
   hi: {
     nav: { how: 'कैसे काम करता है', vehicles: 'गाड़ियाँ', plans: 'प्लान', faq: 'सवाल', contact: 'संपर्क', getApp: 'ऐप डाउनलोड करें' },
@@ -189,7 +189,7 @@ export const T = {
     cta: { title: 'आपका अगला ड्राइवर पहले से ड्राइवर फाइंडर पर है।', sub: 'ऐप डाउनलोड करें, फ़ोन नंबर से लॉगिन करें और KYC दें। कुछ ही मिनट लगते हैं।' },
     faqSub: 'अब भी सवाल है? नीचे नंबर छोड़ें, हम कॉल करेंगे।',
     vehiclesMore: 'नौकरियाँ खुली',
-    footer: { terms: 'उपयोग की शर्तें', privacy: 'गोपनीयता नीति', refund: 'रिफंड नीति', admin: 'एडमिन', rights: 'सर्वाधिकार सुरक्षित।' },
+    footer: { terms: 'उपयोग की शर्तें', privacy: 'गोपनीयता नीति', refund: 'रिफंड नीति', deleteAccount: 'खाता हटाएँ', admin: 'एडमिन', rights: 'सर्वाधिकार सुरक्षित।' },
   },
 }
 

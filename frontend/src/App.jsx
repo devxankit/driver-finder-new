@@ -5,6 +5,7 @@ import { PageLoader, ToastProvider } from '@/components/ui'
 // The landing page and the admin panel are separate bundles: visitors never download admin code.
 const Landing = lazy(() => import('@/modules/landing/Landing'))
 const LegalPage = lazy(() => import('@/modules/landing/LegalPage'))
+const DeleteAccount = lazy(() => import('@/modules/landing/DeleteAccount'))
 const AdminApp = lazy(() => import('@/modules/admin/AdminApp'))
 
 export default function App() {
@@ -17,6 +18,9 @@ export default function App() {
             <Route path="/terms" element={<LegalPage page="terms" />} />
             <Route path="/privacy" element={<LegalPage page="privacy" />} />
             <Route path="/refund" element={<LegalPage page="refund" />} />
+            {/* Google Play: public account-deletion link (works without the app). */}
+            <Route path="/delete-account" element={<DeleteAccount />} />
+            <Route path="/account-deletion" element={<DeleteAccount />} />
             <Route path="/admin/*" element={<AdminApp />} />
             <Route path="*" element={<Landing />} />
           </Routes>
