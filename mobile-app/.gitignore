@@ -79,3 +79,6 @@ android/keystore.properties
 
 # Built APKs
 release/
+
+# Firebase config for the Android app (kept local; the repo is public)
+android/app/google-services.json

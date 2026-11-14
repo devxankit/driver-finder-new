@@ -86,6 +86,13 @@ const userSchema = new Schema(
     },
     geoAt: Date,
 
+    /** FCM tokens of the user's phones (newest last, at most 5) for push notifications. */
+    pushTokens: {
+      type: [{ token: { type: String, required: true }, at: { type: Date, default: Date.now }, _id: false }],
+      default: [],
+      select: false,
+    },
+
     lastSeenAt: Date,
     deletedAt: Date,
     /** Sample accounts from `npm run seed -- --demo`; `npm run seed -- --remove-demo` deletes them. */
@@ -96,6 +103,7 @@ const userSchema = new Schema(
 
 userSchema.index({ role: 1, 'kyc.status': 1, status: 1 })
 userSchema.index({ geo: '2dsphere' })
+userSchema.index({ 'pushTokens.token': 1 })
 userSchema.index({ name: 'text', city: 'text', 'owner.company': 'text' })
 
 export default mongoose.model('User', userSchema)

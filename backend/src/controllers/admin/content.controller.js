@@ -21,6 +21,7 @@ import { notify } from '../../services/notify.service.js'
 import { emitToUser, syncAdmins, syncUsers } from '../../services/realtime.js'
 import { notificationOut } from '../../services/serialize.js'
 import { feesSchema } from '../../validation/schemas.js'
+import { pushToMany } from '../../services/push.service.js'
 
 const ref = (u) => (u ? { id: String(u._id), name: u.name || u.phone, phone: u.phone, company: u.owner?.company ?? '', role: u.role } : null)
 
@@ -287,6 +288,8 @@ export async function sendBroadcast(req, res) {
     for (const n of docs) emitToUser(String(n.user), 'notification', { notification: notificationOut(n.toObject ? n.toObject() : n) })
   }
   const b = await Broadcast.create({ audience, title, text, sentBy: req.admin._id, recipients: ids.length })
+  // Phone push to everyone with the app installed (background: large audiences take a while).
+  pushToMany(filter, title, text, { screen: 'Notifications', broadcastId: String(b._id) })
   res.status(201).json({ success: true, recipients: ids.length, id: String(b._id) })
 }
 

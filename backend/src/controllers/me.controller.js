@@ -83,10 +83,29 @@ export async function uploadMyPhoto(req, res) {
   res.json({ success: true, photo: publicUrl(req.user.photo) })
 }
 
+/**
+ * PUT /api/me/push-token { token }: this phone's FCM token. A phone belongs to
+ * one account at a time (shared phones, sign-out without network), so the
+ * token is taken away from anyone else first. Keeps the 5 newest phones.
+ */
+export async function savePushToken(req, res) {
+  const { token } = req.body
+  await User.updateMany({ _id: { $ne: req.user._id }, 'pushTokens.token': token }, { $pull: { pushTokens: { token } } })
+  await User.updateOne({ _id: req.user._id }, { $pull: { pushTokens: { token } } })
+  await User.updateOne({ _id: req.user._id }, { $push: { pushTokens: { $each: [{ token, at: new Date() }], $slice: -5 } } })
+  res.json({ success: true })
+}
+
+/** DELETE /api/me/push-token { token }: sign-out on this phone. */
+export async function removePushToken(req, res) {
+  await User.updateOne({ _id: req.user._id }, { $pull: { pushTokens: { token: req.body.token } } })
+  res.json({ success: true })
+}
+
 /** DELETE /api/me: soft delete (Play Store requires in-app account deletion). */
 export async function deleteMe(req, res) {
   const photo = req.user.photo
-  req.user.set({ deletedAt: new Date(), name: '', city: '', photo: null, saved: [] })
+  req.user.set({ deletedAt: new Date(), name: '', city: '', photo: null, saved: [], pushTokens: [] })
   await req.user.save()
   removeStored(photo)
   await Promise.all([Job.updateMany({ owner: req.user._id, status: 'active' }, { status: 'closed' }), removeKycDocs(req.user._id)])

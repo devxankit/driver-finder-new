@@ -23,7 +23,9 @@ export const locationSchema = z.object({
   lng: z.coerce.number().min(-180).max(180),
 })
 
-export const roleSchema = z.object({ role: z.enum(['driver', 'owner']) })
+export const pushTokenSchema = z.object({ token: z.string().trim().min(20, 'Invalid token.').max(4096) })
+
+export const roleSchema =z.object({ role: z.enum(['driver', 'owner']) })
 
 export const driverProfileSchema = z.object({
   name: req('Please enter your name.', 80),

@@ -10,6 +10,7 @@ import { Briefcase, House, LucideIcon, MessageSquare, Truck, User, UserSearch } 
 import T from '../components/T';
 import { colors } from '../theme';
 import { useStore } from '../store/AppStore';
+import { flushPendingOpen, navigationRef } from '../utils/push';
 
 import { LanguageScreen, OtpScreen, PhoneScreen, RegisterScreen, RoleScreen, SplashScreen } from '../screens/auth';
 import { DriverSetupScreen, KycScreen, KycStatusScreen } from '../screens/onboarding';
@@ -117,7 +118,7 @@ const theme = { ...DefaultTheme, colors: { ...DefaultTheme.colors, background: c
 
 export default function RootNavigator() {
   return (
-    <NavigationContainer theme={theme}>
+    <NavigationContainer ref={navigationRef} theme={theme} onReady={flushPendingOpen} onStateChange={flushPendingOpen}>
       <Stack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }} initialRouteName="Splash">
         <Stack.Screen name="Splash" component={SplashScreen} options={{ animation: 'fade' }} />
         <Stack.Screen name="Language" component={LanguageScreen} options={{ animation: 'fade' }} />

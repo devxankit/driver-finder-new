@@ -887,7 +887,7 @@ export function DriverProfileTab({ navigation }: any) {
           <ListRow icon={<LogOut size={19} color={colors.redText} />} title={t('profile.logout')} danger onPress={confirmLogout} last />
         </Section>
         <T raw size={12} color={colors.muted} center style={{ marginTop: 16 }}>
-          Driver Finder 1.3.2
+          Driver Finder 1.4.0
         </T>
       </ScrollView>
     </View>

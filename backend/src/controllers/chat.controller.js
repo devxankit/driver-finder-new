@@ -6,6 +6,7 @@ import { assertId } from '../utils/helpers.js'
 import { activeSubscription, assertCanConnect } from '../services/gate.service.js'
 import { driverOut, ownerOut } from '../services/serialize.js'
 import { notify } from '../services/notify.service.js'
+import { pushToUser } from '../services/push.service.js'
 import { emitToUser, isOnline, syncUsers } from '../services/realtime.js'
 
 const side = (user) => (user.role === 'owner' ? 'owner' : 'driver')
@@ -139,11 +140,16 @@ export async function sendMessage(req, res) {
   emitToUser(String(recipient), 'message:new', { ...payload, message: msgOut(m, recipient) })
   emitToUser(String(req.user._id), 'message:new', { ...payload, message: msgOut(m, req.user._id) })
 
-  // Inbox notification only when the recipient is not online and had nothing unread (one per burst).
-  if (!isOnline(recipient) && (toOwner ? conn.unreadOwner : conn.unreadDriver) === 0) {
+  // Recipient not in the app (its socket closes when the app goes to the background):
+  // a phone push for every message (one per chat on the phone, the newest replaces the
+  // older), but only one bell-list entry per burst of unread messages.
+  if (!isOnline(recipient)) {
     const pref = await User.findById(recipient).select('prefs').lean()
     if (pref?.prefs?.chats !== false) {
-      await notify(recipient, `New message from ${req.user.name || 'Driver Finder user'}`, req.body.text.slice(0, 100), { screen: 'Chat', connectionId: String(conn._id) })
+      const title = `New message from ${req.user.name || 'Driver Finder user'}`
+      const data = { screen: 'Chat', connectionId: String(conn._id), name: req.user.name || '' }
+      if ((toOwner ? conn.unreadOwner : conn.unreadDriver) === 0) await notify(recipient, title, req.body.text.slice(0, 100), data)
+      else pushToUser(recipient, title, req.body.text.slice(0, 100), data)
     }
   }
   res.status(201).json({ success: true, message: msgOut(m, req.user._id) })

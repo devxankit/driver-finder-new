@@ -5,3 +5,7 @@ uploads/private/*
 !uploads/**/.gitkeep
 logs/
 *.log
+
+# Firebase service account and other private keys (never commit)
+secrets/
+*firebase-adminsdk*.json

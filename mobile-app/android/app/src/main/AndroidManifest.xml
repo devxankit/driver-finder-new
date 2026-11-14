@@ -1,11 +1,13 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- The API is served over https (Render); plain http is not allowed. -->
+    <!-- The API is served over https (grtchalakbridging.com); plain http is not allowed. -->
 
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Drivers share where they are so owners see how far away they are (only while the app is open). -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!-- Push notifications (Android 13+ asks the user once). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
       android:name=".MainApplication"
@@ -16,6 +18,9 @@
       android:theme="@style/AppTheme"
       android:usesCleartextTraffic="false"
       android:supportsRtl="true">
+      <meta-data
+        android:name="com.google.firebase.messaging.default_notification_icon"
+        android:resource="@drawable/ic_notification" />
       <activity
         android:name=".MainActivity"
         android:label="@string/app_name"

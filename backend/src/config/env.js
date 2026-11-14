@@ -86,6 +86,11 @@ export const env = {
     currency: 'INR',
   },
 
+  /** Phone push notifications (FCM). Path to the Firebase service-account JSON; empty = push off. */
+  firebase: {
+    serviceAccount: process.env.FIREBASE_SERVICE_ACCOUNT || '',
+  },
+
   upload: {
     root: process.env.UPLOAD_DIR || 'uploads',
     maxFileSizeBytes: toInt(process.env.MAX_UPLOAD_BYTES, 8 * 1024 * 1024),

@@ -43,6 +43,8 @@ r.post('/translate', translateLimiter, validate(s.translateSchema), me.translate
 r.put('/me/driver', driver, validate(s.driverProfileSchema), me.saveDriverProfile)
 r.put('/me/owner', owner, validate(s.ownerProfileSchema), me.saveOwnerProfile)
 r.post('/me/photo', uploadPhoto, requireFile, me.uploadMyPhoto)
+r.put('/me/push-token', validate(s.pushTokenSchema), me.savePushToken)
+r.delete('/me/push-token', validate(s.pushTokenSchema), me.removePushToken)
 
 r.post('/kyc/docs/:key', kycUpload, requireFile, me.uploadKycDoc)
 r.post('/kyc/submit', me.submitKyc)

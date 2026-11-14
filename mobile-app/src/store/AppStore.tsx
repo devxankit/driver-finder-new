@@ -15,6 +15,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import i18n from '../i18n';
 import { api, getToken, hasToken, loadConnection, setToken, setUnauthorizedHandler, upload } from '../api/client';
 import { connectSocket, disconnectSocket, onSocket, onSocketStatus, socketConnected } from '../api/socket';
+import { registerPush, unregisterPush, wirePushTaps } from '../utils/push';
 import { applyMeta, AppStatus, DriverLink, Job, Meta, OwnerCard, Driver } from '../data/catalog';
 
 /* ------------------------------------------------------------------ Types */
@@ -194,6 +195,7 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setUnauthorizedHandler(() => {
+      unregisterPush({ server: false });
       setToken(null);
       disconnectSocket();
       reset();
@@ -264,15 +266,24 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
     if (!ready) return;
     loadMeta().catch(() => {});
     refresh().catch(() => {});
+    wirePushTaps();
     const tk = getToken();
-    if (tk) connectSocket(tk);
+    if (tk) {
+      connectSocket(tk);
+      registerPush();
+    }
     const iv = setInterval(() => {
       if (AppState.currentState === 'active' && hasToken() && !socketConnected()) refresh().catch(() => {});
     }, POLL_MS);
     const sub = AppState.addEventListener('change', (st) => {
       if (st === 'active') {
+        const t = getToken();
+        if (t) connectSocket(t);
         refresh().catch(() => {});
         loadMeta().catch(() => {});
+      } else if (st === 'background') {
+        // Out of the app: the server then sends chat messages as phone pushes instead.
+        disconnectSocket();
       }
     });
     return () => {
@@ -404,6 +415,7 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
         await setToken(d.token);
         setMe(d.user);
         connectSocket(d.token);
+        registerPush();
         loadLists(d.user.role).catch(() => {});
         // Start-up may have been offline (or on another server address): fetch the admin lists again.
         loadMeta().catch(() => {});
@@ -487,12 +499,15 @@ export function AppStoreProvider({ children }: { children: React.ReactNode }) {
         api('/me', { method: 'PATCH', body: { prefs: p } }).catch(() => {});
       },
       logout: () => {
+        // Sends the DELETE with the current sign-in before it is cleared below.
+        unregisterPush();
         setToken(null);
         disconnectSocket();
         reset();
       },
       deleteAccount: async () => {
         await api('/me', { method: 'DELETE' });
+        unregisterPush();
         await setToken(null);
         disconnectSocket();
         reset();
