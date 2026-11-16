@@ -74,7 +74,7 @@ export const env = {
    * Changing the account only needs .env + a restart, never a new APK.
    */
   smsIndiaHub: {
-    url: pick('SMSINDIAHUB_URL', 'SMS_INDIA_HUB_URL') || 'https://cloud.smsindiahub.in/vendorsms/pushsms.aspx',
+    url: pick('SMSINDIAHUB_URL', 'SMS_INDIA_HUB_URL') || 'https://cloud.smsindiahub.in/api/mt/SendSMS',
     apiKey: pick('SMSINDIAHUB_API_KEY', 'SMS_INDIA_HUB_API_KEY'),
     user: pick('SMSINDIAHUB_USER', 'SMS_INDIA_HUB_USER'),
     password: pick('SMSINDIAHUB_PASSWORD', 'SMS_INDIA_HUB_PASSWORD'),
