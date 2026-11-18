@@ -209,25 +209,28 @@ export function DriverHomeScreen({ navigation }: any) {
         <>
         <View style={{ backgroundColor: colors.yellow50, paddingTop: insets.top + 10, paddingBottom: 6 }}>
           <View style={{ paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', gap: 12, height: 52 }}>
-            <Pressable onPress={() => navigation.navigate('Profile')} accessibilityLabel="Profile">
+            {/* Photo, name and city together open the profile, where everything can be edited. */}
+            <Pressable onPress={() => navigation.navigate('Profile')} accessibilityRole="button" accessibilityLabel="Open profile" style={({ pressed }) => ({ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, opacity: pressed ? 0.7 : 1 })}>
+            <View>
               <PersonPhoto path={me?.photo} name={me?.name} size={46} radius={23} style={{ borderWidth: 2, borderColor: colors.white }} />
               {kyc.status === 'approved' ? (
                 <View style={{ position: 'absolute', right: -3, bottom: -3 }}>
                   <BadgeCheck size={19} color={colors.white} fill={colors.green} />
                 </View>
               ) : null}
-            </Pressable>
+            </View>
             <View style={{ flex: 1 }}>
               <T w="extrabold" size={18} numberOfLines={1}>
                 {t('home.hello', { name: tr(firstName(driver?.name) || 'Driver') })}
               </T>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
                 <MapPin size={14} color={colors.yellowDark} />
-                <T w="semibold" size={13} color={colors.ink2}>
+                <T w="semibold" size={13} color={colors.ink2} numberOfLines={1} style={{ flexShrink: 1 }}>
                   {driver?.city ?? ''}
                 </T>
               </View>
             </View>
+            </Pressable>
             <Pressable
               onPress={() => navigation.navigate('Language', { fromSettings: true })}
               accessibilityLabel="Change language"
@@ -261,7 +264,7 @@ export function DriverHomeScreen({ navigation }: any) {
             </View>
           </View>
 
-          <CategoryRow value={catKey} onChange={setCat} style={{ marginTop: 14, marginBottom: 8 }} />
+          <CategoryRow value={catKey} onChange={setCat} title={t('home.pickVehicle')} lang={lang} style={{ marginTop: 16, marginBottom: 8 }} />
         </View>
 
         <View style={{ paddingHorizontal: 18 }}>
@@ -887,7 +890,7 @@ export function DriverProfileTab({ navigation }: any) {
           <ListRow icon={<LogOut size={19} color={colors.redText} />} title={t('profile.logout')} danger onPress={confirmLogout} last />
         </Section>
         <T raw size={12} color={colors.muted} center style={{ marginTop: 16 }}>
-          Driver Finder 1.4.0
+          Driver Finder 1.5.0
         </T>
       </ScrollView>
     </View>

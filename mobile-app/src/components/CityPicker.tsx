@@ -7,6 +7,7 @@ import React, { useMemo, useState } from 'react';
 import { FlatList, Modal, TextInput, View } from 'react-native';
 import { Alert } from '../i18n/Alert';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { Check, MapPin, Plus, Search, X } from 'lucide-react-native';
 import Pressable from './Pressable';
 import T from './T';
@@ -40,7 +41,10 @@ export function CityPicker({ visible, title, value, multiple, extra = [], max, m
   const [saving, setSaving] = useState(false);
   const [picked, setPicked] = useState<string[]>(value);
   const tr = useTx();
-  const full = !!multiple && !!max && picked.length >= max;
+  const { t } = useTranslation();
+  // "Anywhere in India" (an `extra`) is not one of the counted cities.
+  const cityCount = picked.filter((x) => !extra.includes(x)).length;
+  const full = !!multiple && !!max && cityCount >= max;
   const limitText = maxMessage ?? `You can select up to ${max}.`;
 
   React.useEffect(() => {
@@ -110,9 +114,16 @@ export function CityPicker({ visible, title, value, multiple, extra = [], max, m
             <Pressable onPress={onClose} accessibilityLabel="Close" hitSlop={8} style={{ width: 40, height: 40, alignItems: 'center', justifyContent: 'center' }}>
               <X size={22} color={colors.ink} />
             </Pressable>
-            <T w="extrabold" size={18} style={{ flex: 1 }}>
-              {title}
-            </T>
+            <View style={{ flex: 1 }}>
+              <T w="extrabold" size={18}>
+                {title}
+              </T>
+              {multiple && max ? (
+                <T raw w="semibold" size={13} color={colors.ink2}>
+                  {t('city.upTo', { max })}
+                </T>
+              ) : null}
+            </View>
           </View>
           <View style={{ marginHorizontal: 16, marginBottom: 12, height: 50, borderRadius: 14, backgroundColor: colors.bg, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, gap: 10 }}>
             <Search size={20} color={colors.muted} />
@@ -207,8 +218,13 @@ export function CityPicker({ visible, title, value, multiple, extra = [], max, m
                 </T>
               </View>
             ) : null}
+            {max && cityCount ? (
+              <T raw w="bold" size={14} center>
+                {t('city.count', { n: cityCount, max })}
+              </T>
+            ) : null}
             <Button
-              title={picked.length ? `Done · ${picked.length}${max ? ` of ${max}` : ''} selected` : 'Done'}
+              title="Done"
               disabled={!picked.length}
               onPress={() => {
                 onChange(picked);

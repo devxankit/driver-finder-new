@@ -53,10 +53,18 @@ export function DriverSetupScreen({ navigation, route }: any) {
   const back = () => (step > 0 ? setStep(step - 1) : navigation.canGoBack() ? navigation.goBack() : navigation.reset({ index: 0, routes: [{ name: 'Role' }] }));
 
   const TOTAL = 5;
-  const canNext = [p.name.trim().length > 1, !!p.city, p.categories.length > 0 && typesOk, p.licence.length > 0 && p.experience > 0, prefer.length > 0][step];
+  const valid = [p.name.trim().length > 1, !!p.city, p.categories.length > 0 && typesOk, p.licence.length > 0 && p.experience > 0, prefer.length > 0];
+  const canNext = valid[step];
+  // Opened from the profile or home of a signed-up driver: any step can be saved, then back.
+  const editing = !!driver && !!me && me.kyc.status !== 'none';
+  const canSave = valid.every(Boolean);
 
   const next = async () => {
     if (step < TOTAL - 1) return setStep(step + 1);
+    return save();
+  };
+
+  const save = async () => {
     setBusy(true);
     try {
       // The pay is typed as digits; owners read it formatted ("₹25,000").
@@ -65,6 +73,7 @@ export function DriverSetupScreen({ navigation, route }: any) {
       const allowed = p.categories.flatMap((k) => cat(k).types ?? []);
       await saveDriver({ ...p, name: p.name.trim(), expectedPay: pay ? rupees(Number(pay)) : '', types: (p.types ?? []).filter((x) => allowed.includes(x)) });
       if (photo) await uploadPhoto(photo.uri, photo.type).catch(() => {});
+      if (editing && navigation.canGoBack()) return navigation.goBack();
       navigation.reset({ index: 0, routes: [{ name: me?.kyc.status === 'none' || !me ? 'Kyc' : 'DriverMain' }] });
     } catch (e: any) {
       Alert.alert(t('setup.toDocs'), e.message);
@@ -81,6 +90,11 @@ export function DriverSetupScreen({ navigation, route }: any) {
           <T w="bold" size={15} style={{ flex: 1 }}>
             {t('setup.step', { n: step + 1, total: TOTAL })}
           </T>
+          {editing ? (
+            <T w="extrabold" size={15}>
+              Edit profile
+            </T>
+          ) : null}
         </View>
         <Steps total={TOTAL} current={step} />
       </View>
@@ -239,7 +253,14 @@ export function DriverSetupScreen({ navigation, route }: any) {
         ) : null}
       </ScrollView>
       <BottomBar>
-        <Button title={step === TOTAL - 1 ? t('setup.toDocs') : t('common.next')} disabled={!canNext} loading={busy} iconRight={<ArrowRight size={18} color={canNext ? colors.ink : colors.muted} strokeWidth={2.6} />} onPress={next} />
+        {editing ? (
+          <View style={{ flexDirection: 'row', gap: 10 }}>
+            {step < TOTAL - 1 ? <Button title={t('common.next')} variant="ghost" disabled={!canNext || busy} onPress={next} style={{ flex: 1 }} /> : null}
+            <Button title="Save changes" disabled={!canSave} loading={busy} onPress={save} style={{ flex: 1 }} />
+          </View>
+        ) : (
+          <Button title={step === TOTAL - 1 ? t('setup.toDocs') : t('common.next')} disabled={!canNext} loading={busy} iconRight={<ArrowRight size={18} color={canNext ? colors.ink : colors.muted} strokeWidth={2.6} />} onPress={next} />
+        )}
       </BottomBar>
       <CityPicker visible={picker === 'city'} title={t('setup.cityTitle')} value={p.city ? [p.city] : []} onClose={() => setPicker(null)} onChange={([c]) => set({ city: c })} />
       <CityPicker

@@ -3,6 +3,7 @@ import { ActivityIndicator, FlatList, Image, RefreshControl, ScrollView, StatusB
 import { Alert } from '../i18n/Alert';
 import Pressable from '../components/Pressable';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import {
   ArrowRight, BadgeCheck, Bell, Briefcase, Camera, Check, ImagePlus, Pencil, ChevronRight, Clock, Crown, FileText, Handshake, Languages, LogOut, CircleQuestionMark,
   Fuel, Gift, Hourglass, MapPin, MessageSquare, Phone, Plus, Search, Settings, Truck, UserSearch, Users, X,
@@ -43,10 +44,13 @@ export function OwnerSetupScreen({ navigation }: any) {
   const [picker, setPicker] = useState(false);
   const set = (x: Partial<OwnerProfile>) => setP((o) => ({ ...o, ...x }));
   const ok = p.name.trim().length > 1 && !!p.city && (p.type === 'individual' || p.company.trim().length > 1);
+  // Opened from the profile of a signed-up owner: save and go back instead of moving on to documents.
+  const editing = !!owner && !!me && me.kyc.status !== 'none';
   const next = async () => {
     setBusy(true);
     try {
       await saveOwner({ ...p, name: p.name.trim(), company: p.type === 'individual' ? p.name.trim() : p.company.trim() });
+      if (editing && navigation.canGoBack()) return navigation.goBack();
       navigation.reset({ index: 0, routes: [{ name: !me || me.kyc.status === 'none' ? 'OwnerKyc' : 'OwnerMain' }] });
     } catch (e: any) {
       Alert.alert('Your details', e.message);
@@ -60,11 +64,11 @@ export function OwnerSetupScreen({ navigation }: any) {
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
           <BackButton onPress={() => (navigation.canGoBack() ? navigation.goBack() : navigation.reset({ index: 0, routes: [{ name: 'Role' }] }))} />
           <T w="bold" size={15} style={{ flex: 1 }}>
-            Step 1 of 2 · Your details
+            {editing ? 'Edit business details' : 'Step 1 of 2 · Your details'}
           </T>
           <Logo size={36} />
         </View>
-        <Steps total={2} current={0} />
+        {editing ? null : <Steps total={2} current={0} />}
       </View>
       <ScrollView contentContainerStyle={{ padding: 18, gap: 18 }} keyboardShouldPersistTaps="handled">
         <T w="extrabold" size={24}>
@@ -101,7 +105,7 @@ export function OwnerSetupScreen({ navigation }: any) {
         </View>
       </ScrollView>
       <BottomBar>
-        <Button title="Next: business documents" disabled={!ok} loading={busy} iconRight={<ArrowRight size={18} color={ok ? colors.ink : colors.muted} strokeWidth={2.6} />} onPress={next} />
+        <Button title={editing ? 'Save changes' : 'Next: business documents'} disabled={!ok} loading={busy} iconRight={<ArrowRight size={18} color={ok ? colors.ink : colors.muted} strokeWidth={2.6} />} onPress={next} />
       </BottomBar>
       <CityPicker visible={picker} title="Your city" value={p.city ? [p.city] : []} onClose={() => setPicker(false)} onChange={([c]) => set({ city: c })} />
     </KeyboardSafe>
@@ -122,6 +126,7 @@ export function OwnerHomeScreen({ navigation }: any) {
   const store = useStore();
   const { owner, me, notices, plan, hasPlan, postedJobs, kyc, links, lang } = store;
   const tr = useTx();
+  const { t } = useTranslation();
   const unread = notices.filter((n) => !n.read).length;
   const applicants = postedJobs.reduce((s, j) => s + j.applicants, 0);
   const [k, setK] = useState<CategoryKey | null>(null);
@@ -150,9 +155,9 @@ export function OwnerHomeScreen({ navigation }: any) {
     <>
       <View style={{ backgroundColor: colors.yellow50, paddingTop: insets.top + 10, paddingBottom: 6 }}>
         <View style={{ paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', gap: 12, height: 52 }}>
-          <Pressable onPress={() => navigation.navigate('Profile')} accessibilityLabel="Profile">
-            <PersonPhoto path={me?.photo} name={owner?.company || owner?.name} size={46} radius={23} style={{ borderWidth: 2, borderColor: colors.white }} />
-          </Pressable>
+          {/* Photo, name and city together open the profile, where everything can be edited. */}
+          <Pressable onPress={() => navigation.navigate('Profile')} accessibilityRole="button" accessibilityLabel="Open profile" style={({ pressed }) => ({ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12, opacity: pressed ? 0.7 : 1 })}>
+          <PersonPhoto path={me?.photo} name={owner?.company || owner?.name} size={46} radius={23} style={{ borderWidth: 2, borderColor: colors.white }} />
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
               <T w="extrabold" size={18} numberOfLines={1} style={{ flexShrink: 1 }}>
@@ -165,6 +170,7 @@ export function OwnerHomeScreen({ navigation }: any) {
               {hasPlan && plan ? ` · Plan: ${daysLeft(plan.expiresAt)} days left` : ''}
             </T>
           </View>
+          </Pressable>
           <IconButton label={`Notifications, ${unread} unread`} onPress={() => navigation.navigate('Notifications')} style={{ backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line }}>
             <Bell size={20} color={colors.ink} />
             {unread ? <View style={{ position: 'absolute', top: 9, right: 10, width: 9, height: 9, borderRadius: 5, backgroundColor: colors.red, borderWidth: 2, borderColor: colors.white }} /> : null}
@@ -190,7 +196,7 @@ export function OwnerHomeScreen({ navigation }: any) {
             ) : null}
           </View>
         </View>
-        <CategoryRow value={k} onChange={setK} style={{ marginTop: 14, marginBottom: 8 }} />
+        <CategoryRow value={k} onChange={setK} title={t('home.pickVehicleOwner')} lang={lang} style={{ marginTop: 16, marginBottom: 8 }} />
       </View>
 
       <View style={{ paddingHorizontal: 18 }}>
@@ -381,7 +387,7 @@ export function VehiclesScreen({ navigation }: any) {
           vehicles.map((v) => (
             <Pressable key={v.id} onPress={() => navigation.navigate('VehicleDetail', { id: v.id })} accessibilityRole="button" accessibilityLabel={`${v.model}, ${v.number}`} style={{ flexDirection: 'row', gap: 12, padding: 10, alignItems: 'center', borderRadius: 18, backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line }}>
               <View style={{ width: 110, height: 76, borderRadius: 12, borderWidth: 1, borderColor: colors.surface2, overflow: 'hidden' }}>
-                <Image source={vehicleImage(v)} style={{ width: '100%', height: '100%' }} resizeMode={v.photo ? 'cover' : 'contain'} />
+                <Image source={vehicleImage(v)} style={{ width: '100%', height: '100%' }} resizeMode="contain" />
                 {vehiclePhotos(v).length > 1 ? (
                   <View style={{ position: 'absolute', right: 5, bottom: 5, flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 6, height: 20, borderRadius: 10, backgroundColor: 'rgba(17,17,17,0.72)' }}>
                     <Camera size={11} color={colors.white} />
@@ -644,7 +650,7 @@ export function VehicleDetailScreen({ navigation, route }: any) {
           {list.length ? (
             <ScrollView ref={pager} horizontal pagingEnabled showsHorizontalScrollIndicator={false} onMomentumScrollEnd={(e) => setIndex(Math.round(e.nativeEvent.contentOffset.x / width))}>
               {list.map((url) => (
-                <Image key={url} source={fileSource(url) ?? cat(v.category).photo} style={{ width, height: 260 }} resizeMode="cover" />
+                <Image key={url} source={fileSource(url) ?? cat(v.category).photo} style={{ width, height: 260 }} resizeMode="contain" />
               ))}
             </ScrollView>
           ) : (
@@ -842,7 +848,7 @@ export function PostJobScreen({ navigation, route }: any) {
               return (
                 <Pressable key={x.id} onPress={() => setVehicleId(x.id)} style={{ flexDirection: 'row', alignItems: 'center', gap: 12, padding: 10, borderRadius: 16, borderWidth: on ? 2 : 1, borderColor: on ? colors.ink : colors.line, backgroundColor: on ? colors.yellow50 : colors.white }}>
                   <View style={{ width: 92, height: 62, borderRadius: 10, backgroundColor: colors.white, overflow: 'hidden' }}>
-                    <Image source={vehicleImage(x)} style={{ width: '100%', height: '100%' }} resizeMode={x.photo ? 'cover' : 'contain'} />
+                    <Image source={vehicleImage(x)} style={{ width: '100%', height: '100%' }} resizeMode="contain" />
                   </View>
                   <View style={{ flex: 1 }}>
                     <T w="bold" size={15}>
@@ -976,7 +982,7 @@ export function PostJobScreen({ navigation, route }: any) {
               Check your job post
             </T>
             <Card style={{ overflow: 'hidden' }}>
-              <Image source={vehicleImage(v)} style={{ width: '100%', height: 150 }} resizeMode={v.photo ? 'cover' : 'contain'} />
+              <Image source={vehicleImage(v)} style={{ width: '100%', height: 150 }} resizeMode="contain" />
               <View style={{ padding: 14, gap: 6, borderTopWidth: 1, borderTopColor: colors.surface2 }}>
                 <T w="extrabold" size={21}>
                   {rupees(Number(pay))}
@@ -1420,9 +1426,12 @@ export function OwnerProfileTab({ navigation }: any) {
               <Camera size={15} color={colors.yellow} />
             </View>
           </Pressable>
-          <T w="extrabold" size={22} style={{ marginTop: 6 }}>
-            {o?.company || o?.name}
-          </T>
+          <Pressable onPress={() => navigation.navigate('OwnerSetup')} accessibilityRole="button" accessibilityLabel="Edit business details" style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
+            <T w="extrabold" size={22}>
+              {o?.company || o?.name}
+            </T>
+            <Pencil size={16} color={colors.ink2} />
+          </Pressable>
           <T size={14} color={colors.ink2}>
             {o?.name} · +91 {store.phone?.replace(/(\d{5})(\d{5})/, '$1 $2')}
           </T>
@@ -1441,7 +1450,7 @@ export function OwnerProfileTab({ navigation }: any) {
           <ListRow icon={<LogOut size={19} color={colors.redText} />} title="Log out" danger onPress={confirmLogout} last />
         </Section>
         <T raw size={12} color={colors.muted} center style={{ marginTop: 16 }}>
-          Driver Finder 1.4.0
+          Driver Finder 1.5.0
         </T>
       </ScrollView>
     </View>

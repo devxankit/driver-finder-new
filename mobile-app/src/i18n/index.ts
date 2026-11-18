@@ -53,7 +53,7 @@ const en = {
     start: 'Start finding jobs', rejectedTitle: 'One document needs a new photo', fix: 'Take the photo again', demoTitle: 'Demo controls',
   },
   home: {
-    hello: 'Namaste, {{name}}', search: 'Search: truck, sedan, bus…', nearMe: 'Near me', planTitle: 'Get a plan to apply',
+    hello: 'Namaste, {{name}}', pickVehicle: 'Which vehicle do you want to drive?', pickVehicleOwner: 'Which vehicle do you need a driver for?', search: 'Search: truck, sedan, bus…', nearMe: 'Near me', planTitle: 'Get a plan to apply',
     planText: 'Browsing is free. Apply and call owners with a plan.', planActive: 'Driver plan active', daysLeft: '{{n}} days left',
     jobsFor: '{{cat}} jobs', allJobs: 'Jobs near you', newest: 'Newest', noJobs: 'No jobs match these filters', clear: 'Clear filters',
     posted: '{{h}}h ago', postedDays: '{{d}}d ago', postedNow: 'Just now', applied: '{{n}} applied', kycBanner: 'Verification pending. You can apply once approved.', all: 'All',
@@ -93,6 +93,7 @@ const en = {
     title: 'Checkout', demo: 'Demo build: no real payment is taken.', payNow: 'Pay now', method: 'Payment method', upi: 'UPI', card: 'Debit or credit card',
     net: 'Net banking', processing: 'Processing payment…', success: 'Payment successful', successText: 'Your plan is active until {{date}}.',
   },
+  city: { upTo: 'Select up to {{max}} cities', count: 'Cities selected: {{n}} / {{max}}' },
   notif: { title: 'Notifications', empty: "You're all caught up", emptyText: 'Job updates and messages will show here.' },
 };
 
@@ -141,7 +142,7 @@ const hi: typeof en = {
   home: {
     hello: 'नमस्ते, {{name}}', search: 'खोजें: ट्रक, सेडान, बस…', nearMe: 'मेरे पास', planTitle: 'आवेदन के लिए प्लान लें',
     planText: 'देखना मुफ़्त है। प्लान से आवेदन करें और मालिकों को कॉल करें।', planActive: 'ड्राइवर प्लान चालू', daysLeft: '{{n}} दिन बाकी',
-    jobsFor: '{{cat}} की नौकरियाँ', allJobs: 'आपके पास की नौकरियाँ', newest: 'नई पहले', noJobs: 'इन फ़िल्टर से कोई नौकरी नहीं मिली',
+    pickVehicle: 'आप कौन-सा वाहन चलाना चाहते हैं?', pickVehicleOwner: 'आपको किस वाहन के लिए ड्राइवर चाहिए?', jobsFor: '{{cat}} की नौकरियाँ', allJobs: 'आपके पास की नौकरियाँ', newest: 'नई पहले', noJobs: 'इन फ़िल्टर से कोई नौकरी नहीं मिली',
     clear: 'फ़िल्टर हटाएँ', posted: '{{h}} घंटे पहले', postedDays: '{{d}} दिन पहले', postedNow: 'अभी-अभी', applied: '{{n}} ने आवेदन किया', kycBanner: 'जाँच बाकी है। मंज़ूरी के बाद आवेदन कर सकेंगे।', all: 'सभी',
     locTitle: 'अपनी लोकेशन शेयर करें', locText: 'ट्रिप के लिए ड्राइवर ढूँढ रहे मालिक देख सकेंगे कि आप कितनी दूर हैं, ताकि पास का काम पहले आप तक पहुँचे।',
     locAllow: 'लोकेशन चालू करें', locSettings: 'सेटिंग्स खोलें', locOff: 'लोकेशन बंद है। फ़ोन में लोकेशन (GPS) चालू करें।',
@@ -179,6 +180,7 @@ const hi: typeof en = {
     title: 'भुगतान', demo: 'डेमो बिल्ड: असली भुगतान नहीं लिया जाता।', payNow: 'अभी भुगतान करें', method: 'भुगतान का तरीका', upi: 'UPI',
     card: 'डेबिट या क्रेडिट कार्ड', net: 'नेट बैंकिंग', processing: 'भुगतान हो रहा है…', success: 'भुगतान सफल', successText: 'आपका प्लान {{date}} तक चालू है।',
   },
+  city: { upTo: 'ज़्यादा से ज़्यादा {{max}} शहर चुनें', count: 'चुने गए शहर: {{n}} / {{max}}' },
   notif: { title: 'सूचनाएँ', empty: 'कोई नई सूचना नहीं', emptyText: 'नौकरी की खबरें और संदेश यहाँ दिखेंगे।' },
 };
 
@@ -190,7 +192,7 @@ const core = (
   phone: { title: string; getOtp: string },
   otp: { title: string; verify: string },
   role: { title: string; driver: string; owner: string },
-  home: { hello: string; nearMe: string; allJobs: string },
+  home: { hello: string; nearMe: string; allJobs: string; pickVehicle: string; pickVehicleOwner: string },
   applyNow: string,
 ) => ({
   common: c,
@@ -240,7 +242,7 @@ const written = {
       { title: 'तुमचा मोबाइल नंबर टाका', getOtp: 'OTP मिळवा' },
       { title: 'कोड टाका', verify: 'पडताळा' },
       { title: 'तुम्ही कोण आहात?', driver: 'मी ड्रायव्हर आहे', owner: 'माझ्याकडे वाहन आहे' },
-      { hello: 'नमस्कार, {{name}}', nearMe: 'जवळपास', allJobs: 'तुमच्या जवळच्या नोकऱ्या' },
+      { hello: 'नमस्कार, {{name}}', nearMe: 'जवळपास', allJobs: 'तुमच्या जवळच्या नोकऱ्या', pickVehicle: 'तुम्हाला कोणते वाहन चालवायचे आहे?', pickVehicleOwner: 'तुम्हाला कोणत्या वाहनासाठी ड्रायव्हर हवा आहे?' },
       'आत्ता अर्ज करा',
     ),
   },
@@ -252,7 +254,7 @@ const written = {
       { title: 'તમારો મોબાઇલ નંબર નાખો', getOtp: 'OTP મેળવો' },
       { title: 'કોડ નાખો', verify: 'ચકાસો' },
       { title: 'તમે કોણ છો?', driver: 'હું ડ્રાઇવર છું', owner: 'મારી પાસે વાહન છે' },
-      { hello: 'નમસ્તે, {{name}}', nearMe: 'મારી નજીક', allJobs: 'તમારી નજીકની નોકરીઓ' },
+      { hello: 'નમસ્તે, {{name}}', nearMe: 'મારી નજીક', allJobs: 'તમારી નજીકની નોકરીઓ', pickVehicle: 'તમે કયું વાહન ચલાવવા માંગો છો?', pickVehicleOwner: 'તમારે કયા વાહન માટે ડ્રાઇવર જોઈએ છે?' },
       'હમણાં અરજી કરો',
     ),
   },
@@ -264,7 +266,7 @@ const written = {
       { title: 'আপনার মোবাইল নম্বর দিন', getOtp: 'OTP নিন' },
       { title: 'কোড দিন', verify: 'যাচাই করুন' },
       { title: 'আপনি কে?', driver: 'আমি ড্রাইভার', owner: 'আমার গাড়ি আছে' },
-      { hello: 'নমস্কার, {{name}}', nearMe: 'কাছাকাছি', allJobs: 'আপনার কাছের কাজ' },
+      { hello: 'নমস্কার, {{name}}', nearMe: 'কাছাকাছি', allJobs: 'আপনার কাছের কাজ', pickVehicle: 'আপনি কোন গাড়ি চালাতে চান?', pickVehicleOwner: 'আপনার কোন গাড়ির জন্য ড্রাইভার দরকার?' },
       'এখনই আবেদন করুন',
     ),
   },
@@ -276,7 +278,7 @@ const written = {
       { title: 'ਆਪਣਾ ਮੋਬਾਈਲ ਨੰਬਰ ਪਾਓ', getOtp: 'OTP ਲਓ' },
       { title: 'ਕੋਡ ਪਾਓ', verify: 'ਪੁਸ਼ਟੀ ਕਰੋ' },
       { title: 'ਤੁਸੀਂ ਕੌਣ ਹੋ?', driver: 'ਮੈਂ ਡਰਾਈਵਰ ਹਾਂ', owner: 'ਮੇਰੇ ਕੋਲ ਗੱਡੀ ਹੈ' },
-      { hello: 'ਸਤ ਸ੍ਰੀ ਅਕਾਲ, {{name}}', nearMe: 'ਮੇਰੇ ਨੇੜੇ', allJobs: 'ਤੁਹਾਡੇ ਨੇੜੇ ਦੀਆਂ ਨੌਕਰੀਆਂ' },
+      { hello: 'ਸਤ ਸ੍ਰੀ ਅਕਾਲ, {{name}}', nearMe: 'ਮੇਰੇ ਨੇੜੇ', allJobs: 'ਤੁਹਾਡੇ ਨੇੜੇ ਦੀਆਂ ਨੌਕਰੀਆਂ', pickVehicle: 'ਤੁਸੀਂ ਕਿਹੜਾ ਵਾਹਨ ਚਲਾਉਣਾ ਚਾਹੁੰਦੇ ਹੋ?', pickVehicleOwner: 'ਤੁਹਾਨੂੰ ਕਿਹੜੇ ਵਾਹਨ ਲਈ ਡਰਾਈਵਰ ਚਾਹੀਦਾ ਹੈ?' },
       'ਹੁਣੇ ਅਪਲਾਈ ਕਰੋ',
     ),
   },
@@ -288,7 +290,7 @@ const written = {
       { title: 'உங்கள் மொபைல் எண்ணை உள்ளிடவும்', getOtp: 'OTP பெறவும்' },
       { title: 'குறியீட்டை உள்ளிடவும்', verify: 'சரிபார்க்கவும்' },
       { title: 'நீங்கள் யார்?', driver: 'நான் ஓட்டுநர்', owner: 'என்னிடம் வாகனம் உள்ளது' },
-      { hello: 'வணக்கம், {{name}}', nearMe: 'அருகில்', allJobs: 'உங்கள் அருகிலுள்ள வேலைகள்' },
+      { hello: 'வணக்கம், {{name}}', nearMe: 'அருகில்', allJobs: 'உங்கள் அருகிலுள்ள வேலைகள்', pickVehicle: 'நீங்கள் எந்த வாகனத்தை ஓட்ட விரும்புகிறீர்கள்?', pickVehicleOwner: 'உங்களுக்கு எந்த வாகனத்திற்கு ஓட்டுநர் தேவை?' },
       'இப்போது விண்ணப்பிக்கவும்',
     ),
   },
@@ -300,7 +302,7 @@ const written = {
       { title: 'మీ మొబైల్ నంబర్ నమోదు చేయండి', getOtp: 'OTP పొందండి' },
       { title: 'కోడ్ నమోదు చేయండి', verify: 'ధృవీకరించండి' },
       { title: 'మీరు ఎవరు?', driver: 'నేను డ్రైవర్‌ని', owner: 'నాకు వాహనం ఉంది' },
-      { hello: 'నమస్తే, {{name}}', nearMe: 'దగ్గరలో', allJobs: 'మీ దగ్గరి ఉద్యోగాలు' },
+      { hello: 'నమస్తే, {{name}}', nearMe: 'దగ్గరలో', allJobs: 'మీ దగ్గరి ఉద్యోగాలు', pickVehicle: 'మీరు ఏ వాహనం నడపాలనుకుంటున్నారు?', pickVehicleOwner: 'మీకు ఏ వాహనానికి డ్రైవర్ కావాలి?' },
       'ఇప్పుడే దరఖాస్తు చేయండి',
     ),
   },
@@ -312,14 +314,28 @@ const written = {
       { title: 'ನಿಮ್ಮ ಮೊಬೈಲ್ ಸಂಖ್ಯೆ ನಮೂದಿಸಿ', getOtp: 'OTP ಪಡೆಯಿರಿ' },
       { title: 'ಕೋಡ್ ನಮೂದಿಸಿ', verify: 'ಪರಿಶೀಲಿಸಿ' },
       { title: 'ನೀವು ಯಾರು?', driver: 'ನಾನು ಚಾಲಕ', owner: 'ನನ್ನ ಬಳಿ ವಾಹನವಿದೆ' },
-      { hello: 'ನಮಸ್ಕಾರ, {{name}}', nearMe: 'ಹತ್ತಿರ', allJobs: 'ನಿಮ್ಮ ಹತ್ತಿರದ ಕೆಲಸಗಳು' },
+      { hello: 'ನಮಸ್ಕಾರ, {{name}}', nearMe: 'ಹತ್ತಿರ', allJobs: 'ನಿಮ್ಮ ಹತ್ತಿರದ ಕೆಲಸಗಳು', pickVehicle: 'ನೀವು ಯಾವ ವಾಹನವನ್ನು ಓಡಿಸಲು ಬಯಸುತ್ತೀರಿ?', pickVehicleOwner: 'ನಿಮಗೆ ಯಾವ ವಾಹನಕ್ಕೆ ಚಾಲಕ ಬೇಕು?' },
       'ಈಗಲೇ ಅರ್ಜಿ ಸಲ್ಲಿಸಿ',
     ),
   },
 };
 
+/** City picker limit text, hand-written: machine translation garbled "1 of 5 selected". */
+const CITY: Record<string, { upTo: string; count: string }> = {
+  mr: { upTo: 'जास्तीत जास्त {{max}} शहरे निवडा', count: 'निवडलेली शहरे: {{n}} / {{max}}' },
+  gu: { upTo: 'વધુમાં વધુ {{max}} શહેરો પસંદ કરો', count: 'પસંદ કરેલાં શહેરો: {{n}} / {{max}}' },
+  bn: { upTo: 'সর্বোচ্চ {{max}}টি শহর বেছে নিন', count: 'বেছে নেওয়া শহর: {{n}} / {{max}}' },
+  pa: { upTo: 'ਵੱਧ ਤੋਂ ਵੱਧ {{max}} ਸ਼ਹਿਰ ਚੁਣੋ', count: 'ਚੁਣੇ ਗਏ ਸ਼ਹਿਰ: {{n}} / {{max}}' },
+  ta: { upTo: 'அதிகபட்சம் {{max}} நகரங்களைத் தேர்ந்தெடுக்கவும்', count: 'தேர்ந்தெடுத்த நகரங்கள்: {{n}} / {{max}}' },
+  te: { upTo: 'గరిష్టంగా {{max}} నగరాలను ఎంచుకోండి', count: 'ఎంచుకున్న నగరాలు: {{n}} / {{max}}' },
+  kn: { upTo: 'ಗರಿಷ್ಠ {{max}} ನಗರಗಳನ್ನು ಆಯ್ಕೆಮಾಡಿ', count: 'ಆಯ್ಕೆ ಮಾಡಿದ ನಗರಗಳು: {{n}} / {{max}}' },
+};
+
 const resources = Object.fromEntries(
-  Object.entries(written).map(([lang, r]) => [lang, { translation: lang === 'en' ? r.translation : complete(lang, r.translation as Tree) }]),
+  Object.entries(written).map(([lang, r]) => [
+    lang,
+    { translation: lang === 'en' ? r.translation : complete(lang, CITY[lang] ? { ...(r.translation as Tree), city: CITY[lang] } : (r.translation as Tree)) },
+  ]),
 );
 
 i18n.use(initReactI18next).init({

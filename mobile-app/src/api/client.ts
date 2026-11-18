@@ -51,6 +51,19 @@ export function fileSource(path?: string | null) {
   return { uri: /^https?:/.test(path) ? path : `${baseUrl}${path}` };
 }
 
+/**
+ * The signed-in user's own KYC document as an <Image> source. The file is
+ * private, so the request carries the sign-in token. `v` busts the image
+ * cache after a retake.
+ */
+export function myDocSource(key: string, v?: string | number) {
+  return {
+    uri: `${baseUrl}/api/kyc/docs/${encodeURIComponent(key)}/file${v ? `?v=${v}` : ''}`,
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    cache: 'reload' as const,
+  };
+}
+
 export class ApiError extends Error {
   status: number;
   code?: string;

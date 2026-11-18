@@ -47,6 +47,7 @@ r.put('/me/push-token', validate(s.pushTokenSchema), me.savePushToken)
 r.delete('/me/push-token', validate(s.pushTokenSchema), me.removePushToken)
 
 r.post('/kyc/docs/:key', kycUpload, requireFile, me.uploadKycDoc)
+r.get('/kyc/docs/:key/file', me.myKycDocFile)
 r.post('/kyc/submit', me.submitKyc)
 
 r.post('/cities', validate(s.citySchema), me.addCity)

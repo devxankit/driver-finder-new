@@ -5,7 +5,8 @@ import { ApiError } from '../utils/ApiError.js'
 import { assertId, escapeRegex } from '../utils/helpers.js'
 import { activeSubscription } from '../services/gate.service.js'
 import { meOut, notificationOut, planOut } from '../services/serialize.js'
-import { publicUrl, removeStored, storedPath } from '../middleware/upload.js'
+import fs from 'node:fs'
+import { absolutePath, publicUrl, removeStored, storedPath } from '../middleware/upload.js'
 import { env } from '../config/env.js'
 import { disconnectUser, syncAdmins } from '../services/realtime.js'
 import { geoJson } from '../services/geo.service.js'
@@ -144,6 +145,21 @@ export async function uploadKycDoc(req, res) {
     { upsert: true, returnDocument: 'after' }
   )
   res.json({ success: true, user: await loadMe(req.user) })
+}
+
+/**
+ * GET /api/kyc/docs/:key/file: the signed-in user's own uploaded document, so
+ * they can see what they submitted. Only ever the caller's file; never cached
+ * by shared caches.
+ */
+export async function myKycDocFile(req, res) {
+  const d = await Document.findOne({ user: req.user._id, key: String(req.params.key) }).lean()
+  if (!d) throw ApiError.notFound('Document not found.')
+  const file = absolutePath(d.file)
+  if (!fs.existsSync(file)) throw ApiError.notFound('File is missing on the server.')
+  res.set('Cache-Control', 'private, no-store')
+  if (d.mime) res.type(d.mime)
+  res.sendFile(file)
 }
 
 /** POST /api/kyc/submit: all required documents must be uploaded. */

@@ -6,7 +6,7 @@ import { BadgeCheck, Bookmark, BookmarkCheck, Camera } from 'lucide-react-native
 import T from './T';
 import { Tag } from './ui';
 import { category, CategoryKey, colors } from '../theme';
-import { cat, categories, images, Job } from '../data/catalog';
+import { cat, categories, catLabel, images, Job } from '../data/catalog';
 import { fileSource } from '../api/client';
 import { rupees } from '../utils/format';
 
@@ -105,41 +105,61 @@ export function CategoryRow({
   value,
   onChange,
   keys,
+  title,
+  lang,
   style,
 }: {
   value: CategoryKey | null;
   onChange: (k: CategoryKey | null) => void;
   keys?: CategoryKey[];
+  /** Heading above the tiles, already in the user's language. */
+  title?: string;
+  /** The user's language, for vehicle names the admin has translated. */
+  lang?: string | null;
   style?: StyleProp<ViewStyle>;
 }) {
   const list = keys ? categories.filter((c) => keys.includes(c.key)) : categories;
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 18, paddingVertical: 4, gap: 10 }} style={style}>
-      {list.map((c) => {
-        const on = value === c.key;
-        return (
-          <Pressable
-            key={c.key}
-            accessibilityRole="button"
-            accessibilityLabel={c.label}
-            accessibilityState={{ selected: on }}
-            onPress={() => onChange(on ? null : c.key)}
-            android_ripple={{ color: 'rgba(17,17,17,0.10)' }}
-            style={({ pressed }) => ({
-              width: 108,
-              height: 80,
-              borderRadius: 18,
-              backgroundColor: on ? colors.yellow50 : colors.white,
-              borderWidth: on ? 2 : 1,
-              borderColor: on ? colors.ink : colors.line,
-              padding: 6,
-              opacity: pressed ? 0.85 : 1,
-            })}>
-            <Image source={c.tile} style={{ width: '100%', height: '100%' }} resizeMode="contain" />
-          </Pressable>
-        );
-      })}
-    </ScrollView>
+    <View style={style}>
+      {title ? (
+        <T raw w="extrabold" size={16} style={{ paddingHorizontal: 18, marginBottom: 8 }}>
+          {title}
+        </T>
+      ) : null}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 18, paddingVertical: 4, gap: 10 }}>
+        {list.map((c) => {
+          const on = value === c.key;
+          const name = catLabel(c.key, lang);
+          return (
+            <Pressable
+              key={c.key}
+              accessibilityRole="button"
+              accessibilityLabel={name}
+              accessibilityState={{ selected: on }}
+              onPress={() => onChange(on ? null : c.key)}
+              android_ripple={{ color: 'rgba(17,17,17,0.10)' }}
+              style={({ pressed }) => ({
+                width: 108,
+                borderRadius: 18,
+                backgroundColor: on ? colors.yellow50 : colors.white,
+                borderWidth: on ? 2 : 1,
+                borderColor: on ? colors.ink : colors.line,
+                paddingHorizontal: 6,
+                paddingTop: 6,
+                paddingBottom: 8,
+                alignItems: 'center',
+                gap: 4,
+                opacity: pressed ? 0.85 : 1,
+              })}>
+              <Image source={c.tile} style={{ width: '100%', height: 64 }} resizeMode="contain" />
+              <T w={on ? 'extrabold' : 'bold'} size={13} numberOfLines={1} center style={{ alignSelf: 'stretch' }}>
+                {name}
+              </T>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+    </View>
   );
 }
 
@@ -192,7 +212,7 @@ export function VehicleImage({ uri, k, style, count = 0 }: { uri?: string | null
   const src = !failed ? fileSource(uri ?? null) : null;
   return (
     <>
-      <Image source={src ?? cat(k).photo} onError={() => setFailed(true)} style={[{ width: '100%', height: '100%' }, style]} resizeMode={src ? 'cover' : 'contain'} />
+      <Image source={src ?? cat(k).photo} onError={() => setFailed(true)} style={[{ width: '100%', height: '100%' }, style]} resizeMode="contain" />
       {src && count > 1 ? (
         <View style={{ position: 'absolute', right: 8, bottom: 8, flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, height: 24, borderRadius: 12, backgroundColor: 'rgba(17,17,17,0.72)' }}>
           <Camera size={12} color={colors.white} />
@@ -233,7 +253,7 @@ export function JobCard({
       accessibilityLabel={`${job.title}, ${rupees(job.pay)}`}
       android_ripple={{ color: 'rgba(17,17,17,0.10)' }}
       style={({ pressed }) => ({ borderRadius: 18, overflow: 'hidden', backgroundColor: colors.white, borderWidth: 1, borderColor: colors.line, opacity: pressed ? 0.92 : 1 })}>
-      <View style={{ height: 150, backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.surface2 }}>
+      <View style={{ height: 170, backgroundColor: colors.white, borderBottomWidth: 1, borderBottomColor: colors.surface2 }}>
         <VehicleImage uri={job.photos?.[0]} k={job.category} count={job.photos?.length ?? 0} />
         <Tag label={`${c.label} · ${job.vehicle}`} tone={job.category} style={{ position: 'absolute', left: 10, top: 10 }} />
         {onSave ? (

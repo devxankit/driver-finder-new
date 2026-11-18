@@ -48,7 +48,7 @@ export function VehicleGallery({ photos, k, height }: { photos?: string[]; k: Ca
         onMomentumScrollEnd={(e) => setIndex(Math.round(e.nativeEvent.contentOffset.x / width))}
         renderItem={({ item, index: i }) => (
           <Pressable onPress={() => { setFull(i); setOpen(i); }} accessibilityRole="imagebutton" accessibilityLabel={`Vehicle photo ${i + 1} of ${list.length}`}>
-            <Image source={fileSource(item)!} onError={() => drop(item)} style={{ width, height }} resizeMode="cover" />
+            <Image source={fileSource(item)!} onError={() => drop(item)} style={{ width, height }} resizeMode="contain" />
           </Pressable>
         )}
       />

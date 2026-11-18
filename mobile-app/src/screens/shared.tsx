@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, KeyboardAvoidingView, Linking, Modal, RefreshControl, ScrollView, TextInput, View } from 'react-native';
+import { ActivityIndicator, FlatList, Image, KeyboardAvoidingView, Linking, Modal, RefreshControl, ScrollView, TextInput, View } from 'react-native';
 import { Alert } from '../i18n/Alert';
 import { RazorpayResult, RazorpaySheet } from '../components/razorpay';
 import Pressable from '../components/Pressable';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useFocusEffect } from '@react-navigation/native';
-import { Bell, Camera, Check, CircleAlert, Clock, Crown, FileText, Headphones, Lock, Mail, MessageSquare, Phone, Send, ShieldCheck, X } from 'lucide-react-native';
+import { Bell, Camera, Check, CircleAlert, Clock, Crown, Eye, FileText, Headphones, Lock, Mail, MessageSquare, Phone, Send, ShieldCheck, X } from 'lucide-react-native';
 import T from '../components/T';
 import { AppBar, BottomBar, Button, Card, EmptyState, ListRow, RadioDot, Section, Toggle } from '../components/ui';
 import { PersonPhoto } from '../components/brand';
@@ -15,7 +15,7 @@ import { colors, font } from '../theme';
 import { Plan, plans as allPlans, PRICE_LABEL, quickReplies, support } from '../data/catalog';
 import { useStore } from '../store/AppStore';
 import { useQuery } from '../hooks/useQuery';
-import { api } from '../api/client';
+import { api, myDocSource } from '../api/client';
 import { ErrorBlock, LoadingBlock } from './driver';
 import { clock, daysLeft, rupees, shortDate, timeAgo } from '../utils/format';
 
@@ -498,35 +498,74 @@ export function LegalScreen() {
 export function DocumentsScreen({ navigation }: any) {
   const { t } = useTranslation();
   const { kyc, role } = useStore();
+  const insets = useSafeAreaInsets();
   const docs = role === 'owner' ? ['aadhaarFront', 'aadhaarBack', 'panCard'] : ['licenceFront', 'licenceBack', 'aadhaarFront', 'aadhaarBack'];
   const rejected = new Set(kyc.rejectedDocs.map((d) => d.key));
+  const title = (d: string) => (d === 'panCard' ? 'PAN card or GST' : t(`kyc.${d}`));
+  // A new token per visit, so a retaken photo is never shown from the image cache.
+  const [stamp] = useState(() => Date.now());
+  const [failed, setFailed] = useState<Set<string>>(new Set());
+  const [open, setOpen] = useState<string | null>(null);
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <AppBar title={t('profile.documents')} />
       <ScrollView contentContainerStyle={{ padding: 18, gap: 12 }}>
+        <T size={13} color={colors.ink2}>
+          Tap a document to see the photo you submitted.
+        </T>
         {docs.map((d) => {
-          const has = kyc.docs[d];
+          const has = kyc.docs[d] || rejected.has(d);
           const bad = rejected.has(d);
-          const verified = kyc.status === 'approved' && has;
+          const verified = kyc.status === 'approved' && kyc.docs[d];
+          const showPhoto = has && !failed.has(d);
           return (
-            <Card key={d} style={{ padding: 14, flexDirection: 'row', alignItems: 'center', gap: 14 }}>
-              <View style={{ width: 48, height: 48, borderRadius: 12, backgroundColor: bad ? colors.redSoft : verified ? colors.greenSoft : colors.bg, alignItems: 'center', justifyContent: 'center' }}>
-                {bad ? <CircleAlert size={22} color={colors.redText} /> : verified ? <Check size={22} color={colors.green} strokeWidth={3} /> : has ? <Clock size={22} color={colors.ink} /> : <Camera size={22} color={colors.muted} />}
-              </View>
-              <View style={{ flex: 1, gap: 4 }}>
-                <T w="bold" size={15}>
-                  {d === 'panCard' ? 'PAN card or GST' : t(`kyc.${d}`)}
-                </T>
-                <T w="semibold" size={12} color={bad ? colors.redText : verified ? colors.greenText : colors.muted}>
-                  {bad ? 'Retake needed' : verified ? t('common.verified') : has ? t('status.s2') : 'Not added yet'}
-                </T>
-              </View>
-              <FileText size={16} color={colors.muted} />
-            </Card>
+            <Pressable key={d} disabled={!showPhoto} onPress={() => setOpen(d)} accessibilityRole="button" accessibilityLabel={title(d)}>
+              <Card style={{ padding: 12, flexDirection: 'row', alignItems: 'center', gap: 14 }}>
+                <View style={{ width: 84, height: 60, borderRadius: 10, overflow: 'hidden', backgroundColor: bad ? colors.redSoft : verified ? colors.greenSoft : colors.bg, alignItems: 'center', justifyContent: 'center' }}>
+                  {showPhoto ? (
+                    <Image source={myDocSource(d, stamp)} onError={() => setFailed((s) => new Set(s).add(d))} style={{ width: '100%', height: '100%' }} resizeMode="cover" />
+                  ) : bad ? (
+                    <CircleAlert size={22} color={colors.redText} />
+                  ) : has ? (
+                    <FileText size={22} color={colors.ink} />
+                  ) : (
+                    <Camera size={22} color={colors.muted} />
+                  )}
+                </View>
+                <View style={{ flex: 1, gap: 4 }}>
+                  <T w="bold" size={15}>
+                    {title(d)}
+                  </T>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    {bad ? <CircleAlert size={14} color={colors.redText} /> : verified ? <Check size={14} color={colors.green} strokeWidth={3} /> : has ? <Clock size={14} color={colors.muted} /> : null}
+                    <T w="semibold" size={12} color={bad ? colors.redText : verified ? colors.greenText : colors.muted}>
+                      {bad ? 'Retake needed' : verified ? t('common.verified') : has ? t('status.s2') : 'Not added yet'}
+                    </T>
+                  </View>
+                </View>
+                {showPhoto ? <Eye size={18} color={colors.ink2} /> : null}
+              </Card>
+            </Pressable>
           );
         })}
         {kyc.status !== 'approved' ? <Button title={t('status.pendingTitle')} variant="ghost" onPress={() => navigation.navigate('KycStatus')} /> : null}
       </ScrollView>
+
+      {open ? (
+        <Modal visible animationType="fade" onRequestClose={() => setOpen(null)} statusBarTranslucent>
+          <View style={{ flex: 1, backgroundColor: '#000' }}>
+            <Image source={myDocSource(open, stamp)} style={{ flex: 1 }} resizeMode="contain" />
+            <View style={{ position: 'absolute', top: insets.top + 8, left: 12, right: 12, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <Pressable onPress={() => setOpen(null)} accessibilityLabel="Close" hitSlop={8} style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.16)', alignItems: 'center', justifyContent: 'center' }}>
+                <X size={22} color={colors.white} />
+              </Pressable>
+              <T w="bold" size={16} color={colors.white} style={{ flex: 1 }} numberOfLines={1}>
+                {title(open)}
+              </T>
+            </View>
+          </View>
+        </Modal>
+      ) : null}
     </View>
   );
 }
