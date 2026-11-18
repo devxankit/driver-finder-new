@@ -47,8 +47,11 @@ export const publicUrl = (stored) => (stored ? `/uploads/${stored.replace(/^publ
 
 export const absolutePath = (stored) => path.join(uploadRoot, stored)
 
+/** Shared sample files used by demo and Google Play review accounts: never deleted with one account. */
+const SHARED = /^private\/(demo-sample|review-sample)/
+
 export function removeStored(stored) {
-  if (!stored) return
+  if (!stored || SHARED.test(stored)) return
   fs.promises.unlink(absolutePath(stored)).catch(() => {})
 }
 

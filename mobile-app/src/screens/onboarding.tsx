@@ -29,8 +29,9 @@ export function DriverSetupScreen({ navigation, route }: any) {
   }, [loadMeta]);
   // `step` opens a later step directly, e.g. the cities step from the profile.
   const [step, setStep] = useState<number>(route?.params?.step ?? 0);
+  // The saved pay is formatted ("₹20,000"); the field has its own ₹ and takes digits only.
   const [p, setP] = useState<DriverProfile>(
-    driver ?? { name: me?.name ?? '', city: me?.city ?? '', categories: [], licence: [], experience: 0, payPref: 'monthly', expectedPay: '', fullTime: true, types: [], preferredLocations: [] },
+    driver ? { ...driver, expectedPay: (driver.expectedPay ?? '').replace(/\D/g, '') } : { name: me?.name ?? '', city: me?.city ?? '', categories: [], licence: [], experience: 0, payPref: 'monthly', expectedPay: '', fullTime: true, types: [], preferredLocations: [] },
   );
   const [photo, setPhoto] = useState<Picked | null>(null);
   const [busy, setBusy] = useState(false);
